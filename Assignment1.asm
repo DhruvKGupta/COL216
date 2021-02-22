@@ -1,5 +1,4 @@
 #program to calculate area under the graph formed by n points sorted according to x co-ordinate
-# ye dekhna ek line pe hi x aur y ko kaise le input 
 
 .data
 askconvention: .asciiz "Enter 0 for absolute value of area enclosed or any other integer otherwise\n";
@@ -11,6 +10,7 @@ errorline: .asciiz "The x coordinate decreased. Start Again\n"
 numpoints: .word 0
 area: .float 0.0
 zero: .float 0.0
+two: .float 2.0
 
 .text
 .globl main
@@ -24,6 +24,9 @@ error1:
 	j main
 
 main:
+
+	li $s7,0
+	l.s $f10,two
 	la $a0, askconvention		#code to print string askconvention
 	li $v0 4
 	syscall			#syscall to print the string
@@ -86,30 +89,30 @@ readLoop:
 	move $t3, $s4		#copy y coordinates t3 and t4 for absolute values
 	move $t4, $t2
 
-	blt 0,$t3, absolute1
-	sub $t3,0,$t3
+	bgt $t3,0, absolute1
+	sub $t3,$s7,$t3
 absolute1:
-	blt 0,$t4, absolute2
-	sub $t4,0,$t4
+	blt $s7,$t4, absolute2
+	sub $t4,$s7,$t4
 absolute2:				#absolute values done, stored in t3 and t4
-
-	mul $t5,$t2,$s4
-	blt $t5,0, cross	#check their product for relative sign, if opposite go to cross calculation of floats
 
 	add $t7,$t3,$t4		# add absolute value of y coordinates
 
 commonnow:	
 	mul $t9,$t8,$t7		# product of (x2-x1) and sum of y coordinates (may be absolute sum or not)
-	add $s5, $s5, $t9	# add to integer sum
+	add $s5, $s5, $t9		# add to integer sum
+	
+	mul $t5,$t2,$s4
+	blt $t5,0, cross	#check their product for relative sign, if opposite go to cross calculation of floats
 endofcalc:
 
 
 	add $s2, $s2, 1
 	ble $s2, $s1, readLoop
 
-	mtc1 $f1,$t6
-	div.s $f1, $f1,2		#convert int sum to float and divide by 2....Note : Float sum is already divided by 2
-	add.s $f0,$f0,$f1		# final area
+	mtc1 $t6, $f1
+	div.s $f1, $f1,$f10		#convert int sum to float and divide by 2....Note : Float sum is already divided by 2
+	sub.s $f0,$f0,$f1		# final area
 
 	li	$v0, 1		
 	move $a0,$t6 			# Print krne ka tareeka dekh liyo float ka..f0 ko krna hai
@@ -121,11 +124,11 @@ endofcalc:
 
 
 cross:
-	sub $t5,0,$t5	#absolute value of product
-	mtc1 $f1,$t5	# transfer to float
+	sub $t5,$s7,$t5	#absolute value of product
+	mtc1 $t5, $f1	# transfer to float
 	add $t7,$t3,$t4	# add absolute values
-	mtc1 $f2,$t7	# conversions of float
-	mtc1 $f3,$t8
+	mtc1 $t7, $f2	# conversions of float
+	mtc1 $t8, $f3
 	mul.s $f4,$f1,$f3 # (y1y2)*(x2-x1)
 	div.s $f5,$f4,$f2 # (y1y2)*(x2-x1)/(y1+y2)		#actual area with division by 2
 	add.s $f0,$f0,$f5
