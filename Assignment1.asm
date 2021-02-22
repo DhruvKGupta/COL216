@@ -81,4 +81,6 @@ readLoop:
 	li	$v0, 1		
 	move $a0,$t6 
 	syscall
+	li $v0, 10
+	syscall
 .end main
