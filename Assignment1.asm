@@ -60,7 +60,7 @@ main:
 	syscall			#syscall to read
 
 	li $s5, 0		#current integer sum
-	l.s $f0, zero	#current float sum
+	l.s $f12, zero	#current float sum
 	
 
 	move $t2, $v0		#copy the read intiger y1 to t2
@@ -96,26 +96,26 @@ absolute1:
 	sub $t4,$s7,$t4
 absolute2:				#absolute values done, stored in t3 and t4
 
+	mul $t5,$t2,$s4
+	blt $t5,0, cross	#check their product for relative sign, if opposite go to cross calculation of floats
 	add $t7,$t3,$t4		# add absolute value of y coordinates
 
 commonnow:	
 	mul $t9,$t8,$t7		# product of (x2-x1) and sum of y coordinates (may be absolute sum or not)
 	add $s5, $s5, $t9		# add to integer sum
-	
-	mul $t5,$t2,$s4
-	blt $t5,0, cross	#check their product for relative sign, if opposite go to cross calculation of floats
+
 endofcalc:
 
 
 	add $s2, $s2, 1
 	ble $s2, $s1, readLoop
 
-	mtc1 $t6, $f1
-	div.s $f1, $f1,$f10		#convert int sum to float and divide by 2....Note : Float sum is already divided by 2
-	sub.s $f0,$f0,$f1		# final area
+	mtc1 $s5, $f14
+	cvt.s.w $f14,$f14
+	div.s $f14, $f14,$f10		#convert int sum to float and divide by 2....Note : Float sum is already divided by 2
+	sub.s $f12,$f14,$f12		# final area
 
-	li	$v0, 1		
-	move $a0,$t6 			# Print krne ka tareeka dekh liyo float ka..f0 ko krna hai
+	li	$v0, 2					 			# Print krne ka tareeka dekh liyo float ka..f0 ko krna hai
 	syscall
 	
 	li $v0, 10
@@ -125,13 +125,16 @@ endofcalc:
 
 cross:
 	sub $t5,$s7,$t5	#absolute value of product
-	mtc1 $t5, $f1	# transfer to float
+	mtc1 $t5, $f16	# transfer to float
+	cvt.s.w $f16,$f16
 	add $t7,$t3,$t4	# add absolute values
-	mtc1 $t7, $f2	# conversions of float
-	mtc1 $t8, $f3
-	mul.s $f4,$f1,$f3 # (y1y2)*(x2-x1)
-	div.s $f5,$f4,$f2 # (y1y2)*(x2-x1)/(y1+y2)		#actual area with division by 2
-	add.s $f0,$f0,$f5
+	mtc1 $t7, $f18	# conversions of float
+	cvt.s.w $f18,$f18
+	mtc1 $t8, $f20
+	cvt.s.w $f20,$f20
+	mul.s $f22,$f16,$f20 # (y1y2)*(x2-x1)
+	div.s $f24,$f22,$f18 # (y1y2)*(x2-x1)/(y1+y2)		#actual area with division by 2
+	add.s $f12,$f12,$f24
 	j endofcalc			# go to end of calc
 
 
