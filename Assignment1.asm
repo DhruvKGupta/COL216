@@ -124,7 +124,7 @@ endofcalc:
 
 
 cross:
-	sub $t5,$s7,$t5	#absolute value of product
+	mul $t5,$t3,$t4	#absolute value of product
 	mtc1 $t5, $f16	# transfer to float
 	cvt.s.w $f16,$f16
 	add $t7,$t3,$t4	# add absolute values
@@ -135,6 +135,6 @@ cross:
 	mul.s $f22,$f16,$f20 # (y1y2)*(x2-x1)
 	div.s $f24,$f22,$f18 # (y1y2)*(x2-x1)/(y1+y2)		#actual area with division by 2
 	add.s $f12,$f12,$f24
-	j endofcalc			# go to end of calc
+	j commonnow			# go to end of calc
 
 
