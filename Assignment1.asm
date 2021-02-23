@@ -1,15 +1,16 @@
 #program to calculate area under the graph formed by n points sorted according to x co-ordinate
 
 .data
-askconvention: .asciiz "\nEnter 0 for absolute value of area enclosed or any other integer otherwise:";
-asknum: .asciiz "Enter the number of input points n (n>1):"
+askconvention: .asciiz "\nEnter 0 for absolute value of area enclosed or any other integer otherwise: ";
+asknum: .asciiz "Enter the number of input points n (n>1): "
 askpoints: .asciiz "Enter the points in the form 
 x-coordinate 
 y-coordinate seperately on each line\n"
 errorline: .asciiz "The x coordinate decreased. Start Again\n"
 errorline2: .asciiz "Number provided is not greater than 1 please retry\n"
-of1: .asciiz  "overflow at multiplication of (x2-x1) and (y1+y2) \nAnswer calculated yet is:"
-of2: .asciiz "overflow while adding the latest sum\nThis is the area so far:"
+of1: .asciiz  "overflow at multiplication of (x2-x1) and (y1+y2) \nAnswer calculated yet is: "
+of2: .asciiz "overflow while adding the latest sum\nThis is the area so far: "
+output: .asciiz "The area under the curve is : "
 numpoints: .word 0
 area: .float 0.0
 zero: .float 0.0
@@ -149,6 +150,9 @@ wrapingUp:
 	div.s $f14, $f14,$f10		#convert int sum to float and divide by 2....Note : Float sum is already divided by 2
 	sub.s $f12,$f14,$f12		# final area
 
+	la $a0, output		#code to print string output
+	li $v0 4
+	syscall			#syscall to print the string
 	li	$v0, 2			
 	syscall
 	
