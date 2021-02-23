@@ -1,12 +1,14 @@
 #program to calculate area under the graph formed by n points sorted according to x co-ordinate
 
 .data
-askconvention: .asciiz "Enter 0 for absolute value of area enclosed or any other integer otherwise\n";
+askconvention: .asciiz "\nEnter 0 for absolute value of area enclosed or any other integer otherwise:";
 asknum: .asciiz "Enter the number of input points n (n>1):"
 askpoints: .asciiz "Enter the points in the form 
 x-coordinate 
 y-coordinate seperately on each line\n"
 errorline: .asciiz "The x coordinate decreased. Start Again\n"
+of1: .asciiz  "overflow at multiplication of (x2-x1) and (y1+y2) \nAnswer calculated yet is:"
+of2: .asciiz "overflow while adding the latest sum\nThis is the area so far:"
 numpoints: .word 0
 area: .float 0.0
 zero: .float 0.0
@@ -22,6 +24,18 @@ error1:
 	li $v0 4
 	syscall
 	j main
+	
+overflow1:
+	la $a0, of1
+	li $v0 4
+	syscall
+	j wrapingUp
+	
+overflow2:
+	la $a0, of2
+	li $v0 4
+	syscall
+	j wrapingUp
 
 main:
 
@@ -97,25 +111,34 @@ absolute1:
 absolute2:				#absolute values done, stored in t3 and t4
 
 	mul $t5,$t2,$s4
-	blt $t5,0, cross	#check their product for relative sign, if opposite go to cross calculation of floats
+	blt $t5,0, cross		#check their product for relative sign, if opposite go to cross calculation of floats
 	add $t7,$t3,$t4		# add absolute value of y coordinates
 
 commonnow:	
 	mul $t9,$t8,$t7		# product of (x2-x1) and sum of y coordinates (may be absolute sum or not)
+	blt $s7,$t7, posover1
+negover1:
+	blt $s7,$t9,overflow1
+posover1:
+	blt $t9,$s7,overflow1
+	blt $s7,$t9, posCheck
+	blt $t9,$s7, negCheck
+okay:
 	add $s5, $s5, $t9		# add to integer sum
+	
 
 endofcalc:
 
 
 	add $s2, $s2, 1
 	ble $s2, $s1, readLoop
-
+wrapingUp:
 	mtc1 $s5, $f14
 	cvt.s.w $f14,$f14
 	div.s $f14, $f14,$f10		#convert int sum to float and divide by 2....Note : Float sum is already divided by 2
 	sub.s $f12,$f14,$f12		# final area
 
-	li	$v0, 2					 			# Print krne ka tareeka dekh liyo float ka..f0 ko krna hai
+	li	$v0, 2			
 	syscall
 	
 	li $v0, 10
@@ -137,4 +160,17 @@ cross:
 	add.s $f12,$f12,$f24
 	j commonnow			# go to end of calc
 
+posCheck:
+	blt $s5,$s7,okay
+	add $s5, $s5, $t9
+	blt $s5, $s7,overflow2
+	j endofcalc
+	
+negCheck:
+	blt $s7,$s5,okay
+	add $s5, $s5, $t9
+	blt $s7, $s5,overflow2
+	j endofcalc
+	
+	
 
