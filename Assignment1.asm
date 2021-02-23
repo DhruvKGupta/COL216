@@ -128,8 +128,10 @@ commonnow:
 	blt $s7,$t7, posover1
 negover1:
 	blt $s7,$t9,overflow1
+	j skipto
 posover1:
 	blt $t9,$s7,overflow1
+skipto:
 	blt $s7,$t9, posCheck
 	blt $t9,$s7, negCheck
 okay:
