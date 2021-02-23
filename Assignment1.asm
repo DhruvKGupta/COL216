@@ -9,7 +9,7 @@ y-coordinate seperately on each line\n"
 errorline: .asciiz "The x coordinate decreased. Start Again\n"
 errorline2: .asciiz "Number provided is not greater than 1 please retry\n"
 of1: .asciiz  "overflow at multiplication of (x2-x1) and (y1+y2) \nAnswer calculated yet is: "
-of2: .asciiz "overflow while adding the latest sum\nThis is the area so far: "
+of2: .asciiz "overflow while adding the latest sum"
 output: .asciiz "The area under the curve is : "
 numpoints: .word 0
 area: .float 0.0
@@ -49,7 +49,7 @@ main:
 
 	li $s7,0
 	l.s $f10,two
-	la $a0, askconvention		#code to print string askconvention
+	la $a0, askconvention	#code to print string askconvention
 	li $v0 4
 	syscall			#syscall to print the string
 
@@ -65,7 +65,7 @@ askn:
 
 	la $v0 5		#read intiger and store in v0
 	syscall			#syscall to read
-	ble $v0,1,error2
+	ble $v0,1,error2	#check if the input value of number of points is valid
 
 
 	move $s1, $v0		#copy the read intiger to s1
@@ -84,7 +84,7 @@ askn:
 	syscall			#syscall to read
 
 	li $s5, 0		#current integer sum
-	l.s $f12, zero	#current float sum
+	l.s $f12, zero		#current float sum
 	
 
 	move $t2, $v0		#copy the read intiger y1 to t2
@@ -104,8 +104,8 @@ readLoop:
 
 	move $t2, $v0		#copy the read intiger yi to t2
 
-	sub $t8, $t1, $s3		# $t8 = $t1 - $s3
-	blt	$t8, 0, error1	# if $t8 <0 error1
+	sub $t8, $t1, $s3	# $t8 = $t1 - $s3
+	blt $t8, 0, error1	# if $t8 <0 error1
 	add $t7, $s4, $t2	# sum of y coordinates without absolute
 
 	bnez $s0,commonnow	# if (s0 not 0) then go to commonnow to calculate without absolute
@@ -118,25 +118,25 @@ readLoop:
 absolute1:
 	blt $s7,$t4, absolute2
 	sub $t4,$s7,$t4
-absolute2:				#absolute values done, stored in t3 and t4
+absolute2:			#absolute values done, stored in t3 and t4
 
 	mul $t5,$t2,$s4
-	blt $t5,0, cross		#check their product for relative sign, if opposite go to cross calculation of floats
+	blt $t5,0, cross	#check their product for relative sign, if opposite go to cross calculation of floats
 	add $t7,$t3,$t4		# add absolute value of y coordinates
 
 commonnow:	
 	mul $t9,$t8,$t7		# product of (x2-x1) and sum of y coordinates (may be absolute sum or not)
-	blt $s7,$t7, posover1
-negover1:
-	blt $s7,$t9,overflow1
+	blt $s7,$t7, posover1	#check for overflow
+negover1:			#they check what is the sign of the numbers to be multiplied(t8 is positive always)
+	blt $s7,$t9,overflow1	#and then if the sign of the sum is different from t9 then overflow must have happende
 	j skipto
 posover1:
 	blt $t9,$s7,overflow1
 skipto:
-	blt $s7,$t9, posCheck
+	blt $s7,$t9, posCheck	#overflow checks for if the sum now has overflown (however QTspim does it and this check is not actually used)
 	blt $t9,$s7, negCheck
 okay:
-	add $s5, $s5, $t9		# add to integer sum
+	add $s5, $s5, $t9	# add to integer sum
 	
 
 endofcalc:
@@ -147,8 +147,8 @@ endofcalc:
 wrapingUp:
 	mtc1 $s5, $f14
 	cvt.s.w $f14,$f14
-	div.s $f14, $f14,$f10		#convert int sum to float and divide by 2....Note : Float sum is already divided by 2
-	sub.s $f12,$f14,$f12		# final area
+	div.s $f14, $f14,$f10	#convert int sum to float and divide by 2....Note : Float sum is already divided by 2
+	sub.s $f12,$f14,$f12	# final area
 
 	la $a0, output		#code to print string output
 	li $v0 4
@@ -162,18 +162,18 @@ wrapingUp:
 
 
 cross:
-	mul $t5,$t3,$t4	#absolute value of product
-	mtc1 $t5, $f16	# transfer to float
+	mul $t5,$t3,$t4		#absolute value of product
+	mtc1 $t5, $f16		# transfer to float
 	cvt.s.w $f16,$f16
-	add $t7,$t3,$t4	# add absolute values
-	mtc1 $t7, $f18	# conversions of float
+	add $t7,$t3,$t4		# add absolute values
+	mtc1 $t7, $f18		# conversions of float
 	cvt.s.w $f18,$f18
 	mtc1 $t8, $f20
 	cvt.s.w $f20,$f20
-	mul.s $f22,$f16,$f20 # (y1y2)*(x2-x1)
-	div.s $f24,$f22,$f18 # (y1y2)*(x2-x1)/(y1+y2)		#actual area with division by 2
+	mul.s $f22,$f16,$f20	# (y1y2)*(x2-x1)
+	div.s $f24,$f22,$f18 	# (y1y2)*(x2-x1)/(y1+y2)		#actual area with division by 2
 	add.s $f12,$f12,$f24
-	j commonnow			# go to end of calc
+	j commonnow		# go to end of calc
 
 posCheck:
 	blt $s5,$s7,okay
