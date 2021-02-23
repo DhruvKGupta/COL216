@@ -7,6 +7,7 @@ askpoints: .asciiz "Enter the points in the form
 x-coordinate 
 y-coordinate seperately on each line\n"
 errorline: .asciiz "The x coordinate decreased. Start Again\n"
+errorline2: .asciiz "Number provided is not greater than 1 please retry\n"
 of1: .asciiz  "overflow at multiplication of (x2-x1) and (y1+y2) \nAnswer calculated yet is:"
 of2: .asciiz "overflow while adding the latest sum\nThis is the area so far:"
 numpoints: .word 0
@@ -24,6 +25,12 @@ error1:
 	li $v0 4
 	syscall
 	j main
+	
+error2:
+	la $a0, errorline2
+	li $v0 4
+	syscall
+	j askn
 	
 overflow1:
 	la $a0, of1
@@ -50,13 +57,15 @@ main:
 
 	move $s0, $v0		#copy the read intiger to s0
 
-
+askn:
 	la $a0, asknum		#code to print string asknum
 	li $v0 4
 	syscall			#syscall to print the string
 
 	la $v0 5		#read intiger and store in v0
 	syscall			#syscall to read
+	ble $v0,1,error2
+
 
 	move $s1, $v0		#copy the read intiger to s1
 	sw $s1, numpoints	#save to variable
