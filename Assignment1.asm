@@ -37,13 +37,13 @@ overflow1:
 	la $a0, of1
 	li $v0 4
 	syscall
-	j wrapingUp
+	j wrappingUp
 	
 overflow2:
 	la $a0, of2
 	li $v0 4
 	syscall
-	j wrapingUp
+	j wrappingUp
 
 main:
 
@@ -144,7 +144,7 @@ endofcalc:
 
 	add $s2, $s2, 1
 	ble $s2, $s1, readLoop
-wrapingUp:
+wrappingUp:
 	mtc1 $s5, $f14
 	cvt.s.w $f14,$f14
 	div.s $f14, $f14,$f10	#convert int sum to float and divide by 2....Note : Float sum is already divided by 2
