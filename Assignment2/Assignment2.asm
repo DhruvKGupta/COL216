@@ -1,12 +1,9 @@
 #program to calculate area under the graph formed by n points sorted according to x co-ordinate
 
 .data
-askconvention: .asciiz "\nEnter 0 for absolute value of area enclosed or any other integer otherwise: ";
-asknum: .asciiz "Enter the number of input points n (n>1): "
-askpoints: .asciiz "Enter the points in the form 
-x-coordinate 
-y-coordinate seperately on each line\n"
-errorline: .asciiz "The x coordinate decreased. Start Again\n"
+
+askexp: .asciiz "Enter the postfix expression string:\n"
+input: .space 128
 errorline2: .asciiz "Number provided is not greater than 1 please retry\n"
 of1: .asciiz  "overflow at multiplication of (x2-x1) and (y1+y2) \nAnswer calculated yet is: "
 of2: .asciiz "overflow while adding the latest sum"
@@ -21,75 +18,21 @@ two: .float 2.0
 .ent main
 
 
-error1:
-	la $a0, errorline
-	li $v0 4
-	syscall
-	j main
-	
-error2:
-	la $a0, errorline2
-	li $v0 4
-	syscall
-	j askn
-	
-overflow1:
-	la $a0, of1
-	li $v0 4
-	syscall
-	j wrappingUp
-	
-overflow2:
-	la $a0, of2
-	li $v0 4
-	syscall
-	j wrappingUp
-
 main:
 
-	li $s7,0
-	l.s $f10,two
-	la $a0, askconvention	#code to print string askconvention
+	la $a0, askexp	#code to print string askexp
 	li $v0 4
 	syscall			#syscall to print the string
 
-	la $v0 5		#read intiger and store in v0
-	syscall			#syscall to read
+	li $v0, 8 # call code, read string
+	la $a0, input # addr, where to put chars
+	li $a1, 128 # max chars for string
+	syscall
 
-	move $s0, $v0		#copy the read intiger to s0
+	li $t0, 0 	#index of character of string, loop index
+	li $t1, 0	#Size of stack currently, will be used to check for validity of push
 
-askn:
-	la $a0, asknum		#code to print string asknum
-	li $v0 4
-	syscall			#syscall to print the string
-
-	la $v0 5		#read intiger and store in v0
-	syscall			#syscall to read
-	ble $v0,1,error2	#check if the input value of number of points is valid
-
-
-	move $s1, $v0		#copy the read intiger to s1
-	sw $s1, numpoints	#save to variable
-
-	la $a0, askpoints	#code to print string askpoints
-	li $v0 4
-	syscall			#syscall to print the string
-
-	la $v0 5		#read intiger x1 and store in v0
-	syscall			#syscall to read
-
-	move $t1, $v0		#copy the read intiger x1 to t1
-
-	la $v0 5		#read intiger y1 and store in v0
-	syscall			#syscall to read
-
-	li $s5, 0		#current integer sum
-	l.s $f12, zero		#current float sum
-	
-
-	move $t2, $v0		#copy the read intiger y1 to t2
-	li $s2, 2		#s2 has the counter for while loop
-
+#Thoda sa starting ka likha..ab bas har charcter dekhna hai..agar 0-9 hai to push, agar +,-,* hai to kuch kuch krna hai..warna error
 readLoop:
 	move $s3, $t1		#store prev x co-ordinate in s2
 	move $s4, $t2		#store prev y co-ordinate in s3
