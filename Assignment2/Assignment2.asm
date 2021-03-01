@@ -5,13 +5,9 @@
 askexp: .asciiz "\nEnter the postfix expression string:\n"
 input: .space 128
 e1: .asciiz "Invalid character input\n"
-of1: .asciiz  "overflow at multiplication of (x2-x1) and (y1+y2) \nAnswer calculated yet is: "
-of2: .asciiz "overflow while adding the latest sum"
-output: .asciiz "The area under the curve is : "
-numpoints: .word 0
-area: .float 0.0
-zero: .float 0.0
-two: .float 2.0
+e2: .asciiz "Invalid postfix expression\n"
+finalans: .asciiz "The calculated value of postfix expression is : "
+
 
 .text
 .globl main
@@ -21,6 +17,13 @@ error1:
 	li $v0, 4
 	la $a0, e1
 	syscall
+	j end
+
+error2:
+	li $v0, 4
+	la $a0, e2
+	syscall
+	j end
 
 main:
 
@@ -44,55 +47,91 @@ readLoop:
 	lb $s2, 0($s0)		#loading one character at a time as a byte
 
 	beq $s2,10,endloop	#checking if we reached end of line 
+	beq $s2,$t2,endloop
 
 	bge $s2, 48, variable
 	beq $s2, 42, multiplication
 	beq $s2, 43, addition
 	beq $s2, 45, substraction
-	beq $s2, 47, division
 	j error1
 	
 variable:
 	bgt $s2, 57, error1	#not a valid character
-		
-	move $a0, $s2 		#code to print string output
-	li $v0 11
-	syscall			#syscall to print the string
+	addi $s2,$s2,-48
+
+	subu $sp, $sp, 4 # push array[i]
+	sw $s2, ($sp)
+	addi $t1,$t1,1
 
 	j increment		#skip to increment index and proceed
 	
 multiplication:
-	move $a0, $s2 		#code to print string output
-	li $v0 11
-	syscall			#syscall to print the string
+
+	slti $t5,$t2,2
+	bne $t5,$zero,error2
+	
+	lw $s4, ($sp)
+	lw $s3, 4($sp)
+	addu $sp, $sp, 8
+
+	mul $s3,$s3,$s4
+
+	subu $sp, $sp, 4 # push array[i]
+	sw $s3, ($sp)
+	addi $t1,$t1,-1
 
 	j increment		#skip to increment index and proceed
 	
 addition:
-	move $a0, $s2 		#code to print string output
-	li $v0 11
-	syscall			#syscall to print the string
+	slti $t5,$t2,2
+	bne $t5,$zero,error2
+	
+	lw $s4, ($sp)
+	lw $s3, 4($sp)
+	addu $sp, $sp, 8
+
+	add $s3,$s3,$s4
+
+	subu $sp, $sp, 4 # push array[i]
+	sw $s3, ($sp)
+	addi $t1,$t1,-1
 
 	j increment		#skip to increment index and proceed
 
 substraction:
-	move $a0, $s2 		#code to print string output
-	li $v0 11
-	syscall			#syscall to print the string
-
-	j increment		#skip to increment index and proceed
-division:
-	move $a0, $s2 		#code to print string output
-	li $v0 11
-	syscall			#syscall to print the string
-
+	slti $t5,$t2,2
+	bne $t5,$zero,error2
 	
+	lw $s4, ($sp)
+	lw $s3, 4($sp)
+	addu $sp, $sp, 8
+
+	sub $s3,$s3,$s4
+
+	subu $sp, $sp, 4 # push array[i]
+	sw $s3, ($sp)
+	addi $t1,$t1,-1
+
 increment:	
 	addi $s0,$s0,1	
 	j readLoop
 
 endloop:
+	li	$s7, 1		# $s7 =1 
+	bne	$t1, $s7, error2	# if size not 1
 
+	lw $s4, ($sp)
+	addu $sp, $sp, 4
+	
+	la $a0, finalans		#code to print string finalans
+	li $v0 4
+	syscall			#syscall to print the string
+
+	li $v0,1
+	move $a0, $s4
+	syscall
+	
+end:
 	li $v0, 10
 	syscall
 .end main
