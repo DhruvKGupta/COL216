@@ -3,10 +3,10 @@
 
 askexp: .asciiz "\nEnter the postfix expression string:\n"
 input: .space 128
-e1: .asciiz "Invalid character input\n"
-e2: .asciiz "Invalid postfix expression\n"
-emt: .asciiz "Empty string input\n"
-finalans: .asciiz "The calculated value of postfix expression is : "
+e1: .asciiz "\nError : Invalid character input at position : "
+e2: .asciiz "\nError : Invalid postfix expression\n"
+emt: .asciiz "\nError : Empty string input\n"
+finalans: .asciiz "\nThe calculated value of postfix expression is : "
 
 
 .text
@@ -16,6 +16,9 @@ finalans: .asciiz "The calculated value of postfix expression is : "
 error1:				#printing error for invalid character
 	li $v0, 4
 	la $a0, e1
+	syscall
+	li $v0, 1
+	move $a0, $t2
 	syscall
 	j end
 
@@ -43,9 +46,8 @@ main:
 
 	li $t0, 0 		#index of character of string, loop index
 	li $t1, 0		#Size of stack currently, will be used to check for validity of push
-
+	li $t2, 1		#position of current character
 	la $s0, input 		#load string to s0
-	#li $t2, '\n'
 
 readLoop:
 	lb $s2, ($s0)		#loading one character at a time as a byte
@@ -114,6 +116,7 @@ substraction:
 
 increment:	
 	addi $s0,$s0,1		#increment the index of char in string
+	addi $t2,$t2,1
 	j readLoop
 
 endloop:
