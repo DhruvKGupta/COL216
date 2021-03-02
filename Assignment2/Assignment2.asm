@@ -43,8 +43,7 @@ main:
 	la $a0, input 		# addr, where to put chars
 	li $a1, 128		# max chars for string
 	syscall
-
-	li $t0, 0 		#index of character of string, loop index
+  
 	li $t1, 0		#Size of stack currently, will be used to check for validity of push
 	li $t2, 1		#position of current character
 	la $s0, input 		#load string to s0
