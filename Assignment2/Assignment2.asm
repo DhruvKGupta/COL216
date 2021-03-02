@@ -1,11 +1,11 @@
-#program to calculate area under the graph formed by n points sorted according to x co-ordinate
-
+#program to evaluate postfix expression
 .data
 
 askexp: .asciiz "\nEnter the postfix expression string:\n"
 input: .space 128
 e1: .asciiz "Invalid character input\n"
 e2: .asciiz "Invalid postfix expression\n"
+emt: .asciiz "Empty string input\n"
 finalans: .asciiz "The calculated value of postfix expression is : "
 
 
@@ -13,15 +13,20 @@ finalans: .asciiz "The calculated value of postfix expression is : "
 .globl main
 .ent main
 
-error1:
+error1:				#printing error for invalid character
 	li $v0, 4
 	la $a0, e1
 	syscall
 	j end
 
-error2:
+error2:				#printing error for invalid postfix expression
 	li $v0, 4
 	la $a0, e2
+	syscall
+	j end
+empty:				#printing error for empty string input
+	li $v0, 4
+	la $a0, emt
 	syscall
 	j end
 
@@ -43,7 +48,7 @@ main:
 	#li $t2, '\n'
 
 readLoop:
-	lb $s2, 0($s0)		#loading one character at a time as a byte
+	lb $s2, ($s0)		#loading one character at a time as a byte
 
 	beq $s2,10,endloop	#checking for newline
 	beq $s2,0,endloop 	#checking for null 
@@ -66,54 +71,53 @@ variable:
 	
 multiplication:
 
-	blt $t1, 2, error2
+	blt $t1, 2, error2	#if we cannot pop two numbers from the stack
 	
-	lw $s4, ($sp)
+	lw $s4, ($sp)		#loading two numbers in s4 and S3
 	addu $sp, $sp, 4
 	lw $s3, ($sp)
 
 
-	mul $s3,$s3,$s4
+	mul $s3,$s3,$s4		#multiply the two numbers
 
-	#subu $sp, $sp, 4 	# push array[i]
-	sw $s3, ($sp)
-	addi $t1,$t1,-1
+	sw $s3, ($sp)		#set new number after multiplication in the stack
+	addi $t1,$t1,-1		#reduce the count of numbers in stack by 1
 
 	j increment		#skip to increment index and proceed
 	
 addition:
 	blt $t1,2,error2	#if we cannot pop 2 numbers from the stack
-	
+
 	lw $s4, ($sp)		#loading two numbers in s4 and s3
 	addu $sp, $sp, 4
 	lw $s3, ($sp)
 
 	add $s3,$s3,$s4		#performing addition of these two numbers
 
-	#subu $sp, $sp, 4 	# push array[i]
-	sw $s3, ($sp)		#set the new value after multiplication
+	sw $s3, ($sp)		#set the new value after addition
 	addi $t1,$t1,-1		#reduce the count of numbers in stack by 1
 
 	j increment		#skip to increment index and proceed
-
-substraction:
-	blt $t1,2,error2
 	
-	lw $s4, ($sp)
+
+substraction:			
+	blt $t1,2,error2	#if we cannot pop 2 numbers from the stack
+	
+	lw $s4, ($sp)		#loading two numbers in s4 and s3
 	addu $sp, $sp, 4
 	lw $s3, ($sp)
 
-	sub $s3,$s3,$s4
+	sub $s3,$s3,$s4		#performing substraction of these two numbers
 
-	#subu $sp, $sp, 4 	# push array[i]
-	sw $s3, ($sp)
-	addi $t1,$t1,-1
+	sw $s3, ($sp)		#set new number in the stack after substraction
+	addi $t1,$t1,-1		#reduce the count of numbers in stack by 1
 
 increment:	
 	addi $s0,$s0,1		#increment the index of char in string
 	j readLoop
 
 endloop:
+	beq $t1, 0, empty
 	bne $t1, 1, error2	# if size not 1
 
 	lw $s4, ($sp)
@@ -127,7 +131,7 @@ endloop:
 	move $a0, $s4
 	syscall
 	
-end:
+end:				#end the program
 	li $v0, 10
 	syscall
 .end main
