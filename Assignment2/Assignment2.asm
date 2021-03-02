@@ -55,13 +55,13 @@ readLoop:
 	beq $s2,10,endloop	#checking for newline
 	beq $s2,0,endloop 	#checking for null 
 
-	bge $s2, 48, variable	#if the character is having ascii value greater than 0
+	bge $s2, 48, number	#if the character is having ascii value greater than 0
 	beq $s2, 42, multiplication	#if char is *
 	beq $s2, 43, addition	#if char is +
 	beq $s2, 45, substraction	#if char is -
 	j error1		# if the character is none of the above then error invalid character
 	
-variable:
+number:
 	bgt $s2, 57, error1	#not a valid character not in 0-9
 	addi $s2,$s2,-48	#calculating exact value of the number from character
 
