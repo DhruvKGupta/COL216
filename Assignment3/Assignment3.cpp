@@ -1,4 +1,5 @@
 #include<bits/stdc++.h>
+#include<iostream>
 using namespace std;
 
 enum InstructionType {add,sub,mul,beq,bne,slt,j,lw,sw,addi};
@@ -107,7 +108,8 @@ class Simulator{
                     }
                     else
                     {
-                        parse(line);    // This line is without comment and without spaces.
+                        bool cont=parse(line);    // This line is without comment and without spaces.
+                        if (!cont) return;
                     }
                 }
             }
@@ -124,10 +126,45 @@ class Simulator{
         vector<Instruction> instructions;
         unordered_map<string,int> labels;
 
-        void parse(string line){
+        bool parse(string line){
             // Parse the string into instruction....
-            return;
+            int l = line.find(':');
+            if (l!=string::npos){
+            if (l=0){
+            cout<<"empty label name"<<endl;
+            return false;
+            }
+            string label = line.substr(0,l-1);
+            labels[label]=pc;
+            }
+            int len=(line.length())-1;
+            if(l==len){return true;}
+            int i=line.find(",");
+            if(i==string::npos){
+            string ins=line.substr(l+1,len);
+            if(ins.at(0)!='j'){
+            cout<<"invalid instruction"<<endl;
+            return false;
+            }
+            if(l+1==len){cout<<"no label specified for jump instruction"<<endl;return false;}
+            string det=line.substr(l+2,len);
+            if (labels.find(det)==labels.end()){cout<<"incorrect jump address"<<endl;return false;}
+            Instruction ist;
+            ist.instr=j;
+            ist.dest=labels.at(det);
+            instructions.push_back(ist);
+            pc++;
+            return true;
+            }
+            else{}
+            return true;
         }
+        
+        //void refresh(){
+        //mem.clear();
+        //registers.clear();
+        //pc=0;
+        //}
 
         
 };
@@ -137,6 +174,6 @@ int main(int argc, char* argv[])
 {   
     string fileName = (argc>1)?argv[1]:"code.txt";
     Simulator sim;
-    sim.loadinstructions(fileName);
+    sim.loadinstructions(fileName);    
     return 0;
 }
