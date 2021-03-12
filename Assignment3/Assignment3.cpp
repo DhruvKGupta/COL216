@@ -22,6 +22,7 @@ struct Instruction
     int src1;
     int src2;
     int dest;
+    int imvalue;
     string jumplabel;
 };
 
@@ -164,7 +165,7 @@ private:
         }
     }
 
-    int isvalid(string reg)
+    int isvalid(string name)
     {
         if (name == "$0" || name == "$zero")
             return 0;
@@ -259,7 +260,11 @@ private:
                     return false;
                 }
             }
-            labels[label] = instructions.size();
+            if (!valName(label)){
+            cout<<"invalid label name at line";
+            return false;
+            }
+            labels[label] = instructions.size();		//variable rakh lena chahiye mere khayal se size ke liye
             int len = (line.length()) - 1;
             if (l == len)
             {
@@ -281,9 +286,9 @@ private:
             i++;
 
         string op = ins.substr(0, i);
-        if (ins.length() <= i)
+        if (ins.length() <= i)          //ye kam ka hai
         {
-            cout << "Syntax Error at line ";
+           cout << "Syntax Error at line ";
             return false;
         }
         string operands = ins.substr(i);
@@ -295,9 +300,12 @@ private:
             return false;
         }
 
-        if (oper < 4)
-        { // For add, sub, mul
+        if (oper < 5)
+        { // For add, sub, mul, slt                                //changed something here
             int i = operands.find(',');
+            if (i=-1){cout<<"invalid instruction at line";
+            return false;
+            }
             int j = i - 1;
             while (j >= 0 && operands[j] == ' ' || operands[j] == '\t')
             {
@@ -307,12 +315,15 @@ private:
             int reg1 = isvalid(reg);
             if (reg1 == -1)
             {
-                cout << " Syntax Error at line ";
+                cout << " Syntax Error:invalid register at line ";
                 return false;
             }
             operands = operands.substr(j + 2);
             Removespace(operands);
             i = operands.find(',');
+            if (i=-1){cout<<"invalid instruction at line";
+            return false;
+            }
             j = i - 1;
             while (j >= 0 && operands[j] == ' ' || operands[j] == '\t')
             {
@@ -327,8 +338,8 @@ private:
             }
             operands = operands.substr(j + 2);
             Removespace(operands);
-            i = operands.find(',');
-            j = i - 1;
+            i = operands.length();				//yaha se kuch changes kiye hai do , hi hote hai 
+            j = i - 1;						
             while (j >= 0 && operands[j] == ' ' || operands[j] == '\t')
             {
                 j--;
@@ -337,6 +348,27 @@ private:
             int reg3 = isvalid(reg);
             if (reg3 == -1)
             {
+            	//if (reg.length()==1)
+            	//{
+            	//Instruction instr;
+            	//instr.instr = oper;
+            	//instr.dest = reg1;
+            	//instr.src1 = reg2;
+            	//instr.src2 = reg3;
+            	//instr.imvalue=reg.at(0);
+            	//instructions.push_back(instr);
+            	//return true;
+            	//}
+            	if(checkNum(reg)){				//ye function likhna padega
+            	Instruction instr;
+            	instr.instr = oper;
+            	instr.dest = reg1;
+            	instr.src1 = reg2;
+            	instr.src2 = -1;
+            	instr.imvalue=stoi(reg);
+            	instructions.push_back(instr);
+            	return true;
+            	}
                 cout << " Syntax Error at line ";
                 return false;
             }
@@ -454,54 +486,161 @@ private:
             instructions.push_back(inst);
             return true;
         }
+        else if (oper<9){
+        int i = operands.find(',');
+            if (i=-1){cout<<"invalid instruction at line";
+            return false;
+            }
+            int j = i - 1;
+            while (j >= 0 && operands[j] == ' ' || operands[j] == '\t')
+            {
+                j--;
+            }
+            string reg = operands.substr(0, j + 1);
+            int reg1 = isvalid(reg);
+            if (reg1 == -1)
+            {
+                cout << " Syntax Error:invalid register at line ";
+                return false;
+            }
+            operands = operands.substr(j + 2);
+            Removespace(operands);
+            i = operands.find('(');
+            if (i=-1){cout<<"invalid instruction at line";
+            return false;
+            }
+            j = i - 1;
+            while (j >= 0 && operands[j] == ' ' || operands[j] == '\t')
+            {
+                j--;
+            }
+            instr.imvalue=0;
+            if (j>i-1){
+            	string reg = operands.substr(0, j + 1);
+            	if(checkNum(reg)){				//ye function likhna padega
+            		Instruction instr;
+            		instr.instr = oper;
+            		instr.dest = reg1;
+            		instr.src1 = -1;
+            		instr.src2 = -1;
+            		instr.imvalue=stoi(reg);
+            		instructions.push_back(instr);
+            		return true;
+            		}
+            	else{
+                	cout << " Syntax Error at line ";
+                	return false;
+                	}
+            	}
+            string operands = operands.substr(j + 2);
+            i = operands.find(')');
+            if (i=-1){cout<<"invalid instruction at line";
+            return false;
+            }
+            j = i - 1;
+            while (j >= 0 && operands[j] == ' ' || operands[j] == '\t')
+            {
+                j--;
+            }
+            string reg = operands.substr(0, j + 1);
+            int reg2 = isvalid(reg);
+            if (reg2 == -1)
+            {
+                cout << " Syntax Error at line ";
+                return false;
+            }
+            operands = operands.substr(j + 2);
+            Removespace(operands);
+            if (!operands.empty())
+            {
+                cout << " Syntax Error at line ";
+                return false;
+            }
+            Instruction instr;
+            instr.instr = oper;
+            instr.dest = reg1;
+            instr.src1 = reg2;
+            instr.src2 = -1;
+            instructions.push_back(instr);
+            return true;
+        }
+        else{
+        int i = operands.find(',');
+            if (i=-1){cout<<"invalid instruction at line";
+            return false;
+            }
+            int j = i - 1;
+            while (j >= 0 && operands[j] == ' ' || operands[j] == '\t')
+            {
+                j--;
+            }
+            string reg = operands.substr(0, j + 1);
+            int reg1 = isvalid(reg);
+            if (reg1 == -1)
+            {
+                cout << " Syntax Error:invalid register at line ";
+                return false;
+            }
+            operands = operands.substr(j + 2);
+            Removespace(operands);
+            i = operands.find(',');
+            if (i=-1){cout<<"invalid instruction at line";
+            return false;
+            }
+            j = i - 1;
+            while (j >= 0 && operands[j] == ' ' || operands[j] == '\t')
+            {
+                j--;
+            }
+            string reg = operands.substr(0, j + 1);
+            int reg2 = isvalid(reg);
+            if (reg2 == -1)
+            {
+                cout << " Syntax Error at line ";
+                return false;
+            }
+            operands = operands.substr(j + 2);
+            Removespace(operands);
+            i = operands.length();				//yaha se kuch changes kiye hai do , hi hote hai 
+            j = i - 1;						
+            while (j >= 0 && operands[j] == ' ' || operands[j] == '\t')
+            {
+                j--;
+            }
+            string reg = operands.substr(0, j + 1);
+            if(checkNum(reg)){				//ye function likhna padega
+            	Instruction instr;
+            	instr.instr = oper;
+            	instr.dest = reg1;
+            	instr.src1 = reg2;
+            	instr.src2 = -1;
+            	instr.imvalue=stoi(reg);
+            	instructions.push_back(instr);
+            	return true;
+            	}
+            else{
+                cout << " Syntax Error at line ";
+                return false;
+                }
+            operands = operands.substr(j + 2);
+            Removespace(operands);
+            if (!operands.empty())
+            {
+                cout << " Syntax Error at line ";
+                return false;
+            }
+            Instruction instr;
+            instr.instr = oper;
+            instr.dest = reg1;
+            instr.src1 = reg2;
+            instr.src2 = -1;
+            instructions.push_back(instr);
+            return true;
+        }
+        }
 
         // Baaki operations ke liye upar jaise codes likh de ifelse krke | Neeche wala part delete kr skte hai...wo galat hai 
         // Ek function bana jo kisi bhi string ko check kre ki valid characters hai ya nhi usme label ke
-        int i = line.find(",");
-        if (i == string::npos)
-        {
-            string ins = line.substr(l + 1, len);
-            if (ins.at(0) != 'j')
-            {
-                cout << "Syntax Error : Invalid instruction at line ";
-                return false;
-            }
-            if (ins.length() < 2)
-            {
-                cout << "Syntax Error : No label specified for jump instruction at line ";
-                return false;
-            }
-            string dest = ins.substr(1);
-            Instruction ist;
-            ist.instr = j;
-            int jump;
-            char *p;
-            if (strtol(dest.c_str(), &p) == 0)
-            {
-                jump = stoi(dest);
-                if (jump < 0)
-                {
-                    cout << " Invalid jump address at line ";
-                    return false;
-                }
-                ist.dest = jump;
-            }
-            else
-            {
-                if (labels.find(dest) == labels.end())
-                    labels[dest] = -1;
-                jump = labels[dest];
-                ist.dest = jump;
-                ist.jumplabel = dest;
-            }
-            instructions.push_back(ist);
-            return true;
-        }
-        else
-        {
-        }
-        return true;
-    }
 
     //void refresh(){
     //mem.clear();
