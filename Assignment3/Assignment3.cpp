@@ -229,26 +229,154 @@ private:
                 }
                                          break;
             case InstructionType::slt :  
-                                        
+                if(inst.dest==0){
+                    cout<<"Error : zero register can not be modified at instruction ";
+                    return false;
+                }
+                if(inst.src2==-1){
+               	    if (registers.get(inst.src1)<inst.imvalue){
+                    registers.post(inst.dest,1);
+                    return true;
+                    }
+                    else{
+                    registers.post(inst.dest,0);
+                    return true;
+                    }
+                }
+                else{
+                    if (registers.get(inst.src1)<registers.get(inst.src2)){
+                    registers.post(inst.dest,1);
+                    return true;
+                    }
+                    else{
+                    registers.post(inst.dest,0);
+                    return true;
+                    }
+                }
                                          break;
-            case InstructionType::beq :   
+            case InstructionType::beq :
+            	if(inst.dest==0){
+                    cout<<"Error : zero register can not be modified at instruction ";
+                    return false;
+                }
+                if(inst.src2==-1){
+               	    if (registers.get(inst.src1)==inst.imvalue){
+               	    if(labels.find(inst.jumplabel)!=labels.end()){
+                    pc=labels[inst.jumplabel];
+                    return true;
+                    }
+                    else{
+                    cout<<"Invalid jump address";
+                    return false;
+                    }
+                    }
+                    else{
+                    return true;
+                    }
+                }
+                else{
+                    if (registers.get(inst.src1)==registers.get(inst.src2)){
+               	    if(labels.find(inst.jumplabel)!=labels.end()){
+                    pc=labels[inst.jumplabel];
+                    return true;
+                    }
+                    else{
+                    cout<<"Invalid jump address";
+                    return false;
+                    }
+                    }
+                    else{
+                    return true;
+                    }
+                    } 
                                         
                                          break;
             case InstructionType::bne :   
-                                        
+                if(inst.dest==0){
+                    cout<<"Error : zero register can not be modified at instruction ";
+                    return false;
+                }
+                if(inst.src2==-1){
+               	    if (registers.get(inst.src1)!=inst.imvalue){
+               	    if(labels.find(inst.jumplabel)!=labels.end()){
+                    pc=labels[inst.jumplabel];
+                    return true;
+                    }
+                    else{
+                    cout<<"Invalid jump address";
+                    return false;
+                    }
+                    }
+                    else{
+                    return true;
+                    }
+                }
+                else{
+                    if (registers.get(inst.src1)!=registers.get(inst.src2)){
+               	    if(labels.find(inst.jumplabel)!=labels.end()){
+                    pc=labels[inst.jumplabel];
+                    return true;
+                    }
+                    else{
+                    cout<<"Invalid jump address";
+                    return false;
+                    }
+                    }
+                    else{
+                    return true;
+                    }
+                    } 
                                          break;
             case InstructionType::j   :   
-                                        
+                if(labels.find(inst.jumplabel)!=labels.end()){
+                    pc=labels[inst.jumplabel];
+                    return true;
+                    }
+                    else{
+                    cout<<"Invalid jump address";
+                    return false;
+                    }                        
                                          break;
-            case InstructionType::lw  :   
-                                        
+            case InstructionType::lw  :
+            { 
+                if(inst.dest==0){
+                    cout<<"Error : zero register can not be modified at instruction ";
+                    return false;
+                }  
+                int index1=inst.imvalue+registers.get(inst.src1);
+                if (index1>=0 && index1<=262144){
+                registers.post(inst.dest,mem.get(index1)); 
+                return true;
+                }
+                else{
+                cout<<"Invalid address in memory";
+                return false;
+                }                       
                                          break;
-            case InstructionType::sw  :   
-                                        
+                                         }
+            case InstructionType::sw  :  
+            { 
+            	int index2=inst.imvalue+registers.get(inst.src1);
+            	if (index2>=0 && index2<=262144){
+                mem.post(registers.get(inst.dest),index2);
+                return true;                   
+                }
+                else{
+                cout<<"Invalid address in memory";
+                return false;
+                }     
                                          break;
-            case InstructionType::addi:   
-                                        
+                                         }
+            case InstructionType::addi:  
+            { 
+                if(inst.dest==0){
+                    cout<<"Error : zero register can not be modified at instruction ";
+                    return false;
+                }
+                    registers.post(inst.dest,registers.get(inst.src1)+inst.imvalue);
+                    return true;                      
                                          break;
+                                         }
             default: return false;
                      break;
         }
@@ -361,6 +489,9 @@ private:
     bool checkNum(string num)
     {
         int j = num.length() - 1;
+        if(j==-1){
+        cout<<"invalid/empty aregument ";
+        return false;}
         while (j >= 0 && (num[j] == ' ' || num[j] == '\t'))
             j--;
         string str = num.substr(0, j + 1);
@@ -808,15 +939,6 @@ private:
             return true;
         }
     }
-
-    // Baaki operations ke liye upar jaise codes likh de ifelse krke | Neeche wala part delete kr skte hai...wo galat hai
-    // Ek function bana jo kisi bhi string ko check kre ki valid characters hai ya nhi usme label ke
-
-    //void refresh(){
-    //mem.clear();
-    //registers.clear();
-    //pc=0;
-    //}
 };
 
 int main(int argc, char *argv[])
