@@ -418,10 +418,45 @@ private:
                 inst.dest = jump;
                 inst.jumplabel = operands;
             }
+            instructions.push_back(inst);
+            return true;
+        }
+        else if(oper<7){
+            int x = operands.length()-1;
+            while(x>=0 && operands[x]==' ' || operands[x] == '\t')
+                x--;
+            operands = operands.substr(0,x+1);
+            if(operands.empty()){
+                cout<< "Syntax Error at line ";
+            }
+            Instruction inst;
+            inst.instr = oper;
+            int jump;
+            char *p;
+            if (strtol(operands.c_str(), &p) == 0)
+            {
+                jump = stoi(operands);
+                if (jump < 0)
+                {
+                    cout << " Invalid jump address at line ";
+                    return false;
+                }
+                inst.dest = jump;
+            }
+            else
+            {
+                if (labels.find(operands) == labels.end())
+                    labels[operands] = -1;
+                jump = labels[operands];
+                inst.dest = jump;
+                inst.jumplabel = operands;
+            }
+            instructions.push_back(inst);
             return true;
         }
 
-        // Baaki operations ke liye upar jaise codes likh de ifelse krke | Neeche wala part delete kr skte hai...wo galat hai
+        // Baaki operations ke liye upar jaise codes likh de ifelse krke | Neeche wala part delete kr skte hai...wo galat hai 
+        // Ek function bana jo kisi bhi string ko check kre ki valid characters hai ya nhi usme label ke
         int i = line.find(",");
         if (i == string::npos)
         {
