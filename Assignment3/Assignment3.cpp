@@ -29,22 +29,35 @@ struct Instruction
 
 class RegisterFile
 {
-
+public:
     int get(int index)
     {
         return reg[index];
     }
     void clear()
     {
-        for (int i = 0; i < 32; i++)
+        for (int i = 0; i < 31; i++)
         {
             reg[i] = 0;
         }
+        reg[31] = 262143;
     }
 
     void post(int index, int data)
     {
         reg[index] = data;
+    }
+
+    void print(){
+        cout<<"$zero : "<<setfill('0')<<setw(32)<<hex<<reg[0]<<" | ";
+        for(int i=1;i<31;i++){
+            cout<<"$r"<<i-1<<" : "<<setfill('0')<<setw(32)<<hex<<reg[i]<<" | ";
+        }
+        cout<<"$sp : "<<setfill('0')<<setw(32)<<hex<<reg[31]<<"\n";
+    }
+
+    RegisterFile(){
+        clear();
     }
 
 private:
@@ -53,7 +66,7 @@ private:
 
 class Memory
 {
-
+public:
     void clear()
     {
         memset(Mem, 0, sizeof(Mem));
@@ -78,6 +91,7 @@ class Simulator
 public:
     void loadinstructions(string fileName)
     {
+        clear();
         string line;
         ifstream file(fileName);
         if (file.is_open())
@@ -100,11 +114,13 @@ public:
                     if (!cont)
                     {
                         cout << i;
+                        file.close();
                         abort();
                     }
                     i++;
                 }
             }
+            file.close();
         }
         else
         {
@@ -128,13 +144,116 @@ public:
             }
         }
     }
+    void run(){
+        pc=0;
+        clock=0;
+        while(pc<instructions.size() && clock<200){
+            num_times[pc+1] = (num_times.find(pc+1)==num_times.end())? 1 : num_times[pc+1]+1;
+            bool done = execute(instructions[pc]);
+            if(!done){
+                cout<<pc<<"\n";
+                abort();
+            }
+            clock++;
+            registers.print();
+        }
+        for(auto x : num_times){
+            cout<<"Instruction "<<x.first<<" is run "<<x.second<<" times\n";
+        }
+    }
+
+    void clear(){
+        instructions.clear();
+        labels.clear();
+        mem.clear();
+        registers.clear();
+        pc=0;
+        clock=0;
+    }
+    Simulator(){
+        clear();
+    }
 
 private:
     Memory mem;
     RegisterFile registers;
     int pc = 0;
+    int clock = 0;
     vector<Instruction> instructions;
     unordered_map<string, int> labels;
+    unordered_map<int,int> num_times;
+
+    bool execute(Instruction inst){
+        pc++;
+        switch(inst.instr){
+            case InstructionType::add :  
+                if(inst.dest==0){
+                    cout<<"Error : zero register can not be modified at instruction ";
+                    return false;
+                }
+                if(inst.src2==-1){
+                    registers.post(inst.dest,registers.get(inst.src1)+inst.imvalue);
+                    return true;
+                }
+                else{
+                    registers.post(inst.dest,registers.get(inst.src1)+registers.get(inst.src2));
+                    return true;
+                }
+                                         break;
+            case InstructionType::sub :  
+                if(inst.dest==0){
+                    cout<<"Error : zero register can not be modified at instruction ";
+                    return false;
+                }
+                if(inst.src2==-1){
+                    registers.post(inst.dest,registers.get(inst.src1)-inst.imvalue);
+                    return true;
+                }
+                else{
+                    registers.post(inst.dest,registers.get(inst.src1)-registers.get(inst.src2));
+                    return true;
+                }                      
+                                         break;
+            case InstructionType::mul :   
+                if(inst.dest==0){
+                    cout<<"Error : zero register can not be modified at instruction ";
+                    return false;
+                }
+                if(inst.src2==-1){
+                    registers.post(inst.dest,registers.get(inst.src1)*inst.imvalue);
+                    return true;
+                }
+                else{
+                    registers.post(inst.dest,registers.get(inst.src1)*registers.get(inst.src2));
+                    return true;
+                }
+                                         break;
+            case InstructionType::slt :  
+                                        
+                                         break;
+            case InstructionType::beq :   
+                                        
+                                         break;
+            case InstructionType::bne :   
+                                        
+                                         break;
+            case InstructionType::j   :   
+                                        
+                                         break;
+            case InstructionType::lw  :   
+                                        
+                                         break;
+            case InstructionType::sw  :   
+                                        
+                                         break;
+            case InstructionType::addi:   
+                                        
+                                         break;
+            default: return false;
+                     break;
+        }
+        return true;
+    }
 
     void Removespace(string &str)
     {
@@ -702,8 +821,9 @@ private:
 
 int main(int argc, char *argv[])
 {
-    string fileName = (argc > 1) ? argv[1] : ".\\code.txt";
+    string fileName = (argc > 1) ? argv[1] : "code.txt";
     Simulator sim;
-    sim.loadinstructions("d:\\IITD\\COL216\\Assignment1\\Assignment3\\code.txt"); // Direct path helps in debugging
+    sim.loadinstructions(fileName); 
+    sim.run();
     return 0;
 }
