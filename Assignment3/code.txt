@@ -1,5 +1,6 @@
-abc	#Hi
-gbf#hi
-#hello	
-lm
-   
+begin: add $r2 , $r3 , $r4 #Hi
+add $r3,$r4,1 # Hi
+j begin
+# comment
+add $3, $4, $zero
+j end
