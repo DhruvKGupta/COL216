@@ -1,7 +1,3 @@
-j start 
-start:
-addi $r2,$r1,10
 sw $r2 ,100($zero)
-#label 			hello
-lw $r4, 90($r2)
+
 

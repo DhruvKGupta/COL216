@@ -50,15 +50,17 @@ public:
 
     void print(bool hext)
     {
-        if(hext){
-            cout << "$zero : " <<hex<<"0x"<< reg[0] << " | ";
+        if (hext)
+        {
+            cout << "$zero : " << hex << "0x" << reg[0] << " | ";
             for (int i = 1; i < 31; i++)
             {
-                cout << "$r" << i - 1 << " : " <<hex<<"0x"<< reg[i] << " | ";
+                cout << "$r" << i - 1 << " : " << hex << "0x" << reg[i] << " | ";
             }
-            cout << "$sp : " << hex <<"0x"<< reg[31] << "\n";
+            cout << "$sp : " << hex << "0x" << reg[31] << "\n";
         }
-        else{
+        else
+        {
             cout << "$zero : " << reg[0] << " | ";
             for (int i = 1; i < 31; i++)
             {
@@ -126,7 +128,7 @@ public:
                     bool cont = parse(line); // This line is without comment and without spaces.
                     if (!cont)
                     {
-                        cout << i<<endl;
+                        cout << i << endl;
                         file.close();
                         return false;
                     }
@@ -174,7 +176,7 @@ public:
             clock++;
             registers.print(hex);
         }
-        cout<<"Number of clock cycles is "<<clock<<"\n";
+        cout << "Number of clock cycles is " << clock << "\n";
         for (auto x : num_times)
         {
             cout << "Instruction " << x.first << " is run " << x.second << " times\n";
@@ -189,7 +191,7 @@ public:
         registers.clear();
         pc = 0;
         clock = 0;
-        hex=true;
+        hex = true;
     }
     Simulator()
     {
@@ -204,12 +206,12 @@ private:
     vector<Instruction> instructions;
     unordered_map<string, int> labels;
     unordered_map<int, int> num_times;
-    bool hex=true;
+    bool hex = true;
 
     bool execute(Instruction inst)
     {
         pc++;
-        int index1,index2;
+        int index1, index2;
         switch (inst.instr)
         {
         case InstructionType::add:
@@ -395,7 +397,7 @@ private:
             break;
 
         default:
-            cout<<" Invalid Instruction ";
+            cout << " Invalid Instruction ";
             return false;
             break;
         }
@@ -563,7 +565,7 @@ private:
             }
             if (!valName(label))
             {
-                cout << "invalid label name at line";
+                cout << "invalid label name at line ";
                 return false;
             }
             labels[label] = instructions.size(); //variable rakh lena chahiye mere khayal se size ke liye
@@ -607,7 +609,7 @@ private:
             int i = operands.find(',');
             if (i == -1)
             {
-                cout << "invalid instruction at line";
+                cout << "invalid instruction at line ";
                 return false;
             }
             int j = i - 1;
@@ -627,7 +629,7 @@ private:
             i = operands.find(',');
             if (i == -1)
             {
-                cout << "invalid instruction at line";
+                cout << "invalid instruction at line ";
                 return false;
             }
             j = i - 1;
@@ -802,7 +804,7 @@ private:
             int i = operands.find(',');
             if (i == -1)
             {
-                cout << "invalid instruction at line";
+                cout << "invalid instruction at line ";
                 return false;
             }
             int j = i - 1;
@@ -817,12 +819,12 @@ private:
                 cout << " Syntax Error:invalid register at line ";
                 return false;
             }
-            operands = operands.substr(j + 2);
+            operands = operands.substr(i + 1);
             Removespace(operands);
             i = operands.find('(');
             if (i == -1)
             {
-                cout << "invalid instruction at line";
+                cout << "invalid instruction at line ";
                 return false;
             }
             j = i - 1;
@@ -834,7 +836,7 @@ private:
             if (j >= 0)
             {
                 string reg = operands.substr(0, j + 1);
-                cout<<reg;
+                cout << reg;
                 if (checkNum(reg))
                 { //ye function likhna padega
                     offset = stoi(reg);
@@ -845,11 +847,11 @@ private:
                     return false;
                 }
             }
-            string operands = operands.substr(i + 1);
+            operands = operands.substr(i + 1);
             i = operands.find(')');
             if (i == -1)
             {
-                cout << "invalid instruction at line";
+                cout << "invalid instruction at line ";
                 return false;
             }
             j = i - 1;
@@ -885,7 +887,7 @@ private:
             int i = operands.find(',');
             if (i == -1)
             {
-                cout << "invalid instruction at line";
+                cout << "invalid instruction at line ";
                 return false;
             }
             int j = i - 1;
@@ -905,7 +907,7 @@ private:
             i = operands.find(',');
             if (i == -1)
             {
-                cout << "invalid instruction at line";
+                cout << "invalid instruction at line ";
                 return false;
             }
             j = i - 1;
@@ -967,8 +969,9 @@ int main(int argc, char *argv[])
 {
     string fileName = (argc > 1) ? argv[1] : "code.txt";
     Simulator sim;
-    if(sim.loadinstructions(fileName)){
-    sim.run();
+    if (sim.loadinstructions("d:\\IITD\\COL216\\Assignment1\\Assignment3\\code4.txt"))
+    {
+        sim.run();
     }
     return 0;
 }
