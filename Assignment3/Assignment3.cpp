@@ -509,19 +509,30 @@ private:
     }
     bool checkNum(string num)
     {
+    	Removespace(num);
         int j = num.length() - 1;
         if (j == -1)
         {
-            cout << "invalid/empty aregument ";
+            cout << "invalid/empty argument ";
             return false;
         }
         while (j >= 0 && (num[j] == ' ' || num[j] == '\t'))
             j--;
         string str = num.substr(0, j + 1);
-        for (int i = 0; i < str.length(); i++)
+        int l=str.length();
+        for (int i = 0; i < l; i++)
         {
-            if (!isdigit(str[i]))
-                return false;
+            if(i==0 && l>1){
+            if (isdigit(str[i])||str[i]=='+'||str[i]=='-')
+                continue;
+            else{
+            	return false;
+            	}
+            	}
+            else{
+            	if(!isdigit(str[i]))
+            	return false;
+            }	
         }
 
         return true;
@@ -584,13 +595,15 @@ private:
             cout << "Syntax Error at line ";
             return false;
         }
+        if (ins.length()==0){
+        return true;}
 
         int i = 0;
         while (i < 4 && ins[i] != ' ' && ins[i] != '\t' && ins[i] != '\0')
             i++;
 
         string op = ins.substr(0, i);
-        if (ins.length() <= i) //ye kam ka hai
+        if (ins.length() <= i) 
         {
             cout << "Syntax Error at line ";
             return false;
@@ -836,9 +849,8 @@ private:
             if (j >= 0)
             {
                 string reg = operands.substr(0, j + 1);
-                cout << reg;
                 if (checkNum(reg))
-                { //ye function likhna padega
+                { 
                     offset = stoi(reg);
                 }
                 else
@@ -969,7 +981,7 @@ int main(int argc, char *argv[])
 {
     string fileName = (argc > 1) ? argv[1] : "code.txt";
     Simulator sim;
-    if (sim.loadinstructions("d:\\IITD\\COL216\\Assignment1\\Assignment3\\code4.txt"))
+    if (sim.loadinstructions(fileName))
     {
         sim.run();
     }
