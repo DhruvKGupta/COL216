@@ -1,0 +1,7 @@
+begin: add $r2 , $r3 , $r4 #Hi
+add 	$r3,	$r3,1 # Hi
+# comment
+add $3, $4, $zero
+j end
+sw $r5, $2
+end:

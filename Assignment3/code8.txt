@@ -1,0 +1,6 @@
+addi $r1, $zero ,10
+la:
+mul $r1,$r1,10
+sw $r1, ($r1)
+lw $r2, ($r2)
+j la

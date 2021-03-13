@@ -1,0 +1,7 @@
+sub $2,$zero, -3
+addi $r2, $r1, 7
+beq $r2,$r2,jp
+sw $r1,($zero)
+jp:sw $r2,90($r2)
+mul $r3,$r2,$r2
+lw $r4, ($r3)

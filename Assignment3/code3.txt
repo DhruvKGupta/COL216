@@ -1,0 +1,6 @@
+jstart 
+start:
+addi $r2,$s1,10
+
+#label 			hello
+
