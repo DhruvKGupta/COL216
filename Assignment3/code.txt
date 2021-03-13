@@ -1,6 +1,4 @@
 begin: add $r2 , $r3 , $r4 #Hi
-add $r3,$r4,1 # Hi
-j begin
+add $r3,$r4,16 # Hi
 # comment
 add $3, $4, $zero
-j end

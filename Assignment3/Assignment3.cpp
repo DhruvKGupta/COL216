@@ -48,15 +48,28 @@ public:
         reg[index] = data;
     }
 
-    void print(){
-        cout<<"$zero : "<<setfill('0')<<setw(32)<<hex<<reg[0]<<" | ";
-        for(int i=1;i<31;i++){
-            cout<<"$r"<<i-1<<" : "<<setfill('0')<<setw(32)<<hex<<reg[i]<<" | ";
+    void print(bool hext)
+    {
+        if(hext){
+            cout << "$zero : " <<hex<<"0x"<< reg[0] << " | ";
+            for (int i = 1; i < 31; i++)
+            {
+                cout << "$r" << i - 1 << " : " <<hex<<"0x"<< reg[i] << " | ";
+            }
+            cout << "$sp : " << hex <<"0x"<< reg[31] << "\n";
         }
-        cout<<"$sp : "<<setfill('0')<<setw(32)<<hex<<reg[31]<<"\n";
+        else{
+            cout << "$zero : " << reg[0] << " | ";
+            for (int i = 1; i < 31; i++)
+            {
+                cout << "$r" << i - 1 << " : " << reg[i] << " | ";
+            }
+            cout << "$sp : " << reg[31] << "\n";
+        }
     }
 
-    RegisterFile(){
+    RegisterFile()
+    {
         clear();
     }
 
@@ -144,33 +157,41 @@ public:
             }
         }
     }
-    void run(){
-        pc=0;
-        clock=0;
-        while(pc<instructions.size() && clock<200){
-            num_times[pc+1] = (num_times.find(pc+1)==num_times.end())? 1 : num_times[pc+1]+1;
+    void run()
+    {
+        pc = 0;
+        clock = 0;
+        while (pc < instructions.size() && clock < 1000)
+        {
+            num_times[pc + 1] = (num_times.find(pc + 1) == num_times.end()) ? 1 : num_times[pc + 1] + 1;
             bool done = execute(instructions[pc]);
-            if(!done){
-                cout<<pc<<"\n";
+            if (!done)
+            {
+                cout << pc << "\n";
                 abort();
             }
             clock++;
-            registers.print();
+            registers.print(hex);
         }
-        for(auto x : num_times){
-            cout<<"Instruction "<<x.first<<" is run "<<x.second<<" times\n";
+        cout<<"Number of clock cycles is "<<clock<<"\n";
+        for (auto x : num_times)
+        {
+            cout << "Instruction " << x.first << " is run " << x.second << " times\n";
         }
     }
 
-    void clear(){
+    void clear()
+    {
         instructions.clear();
         labels.clear();
         mem.clear();
         registers.clear();
-        pc=0;
-        clock=0;
+        pc = 0;
+        clock = 0;
+        hex=true;
     }
-    Simulator(){
+    Simulator()
+    {
         clear();
     }
 
@@ -181,206 +202,203 @@ private:
     int clock = 0;
     vector<Instruction> instructions;
     unordered_map<string, int> labels;
-    unordered_map<int,int> num_times;
+    unordered_map<int, int> num_times;
+    bool hex=true;
 
-    bool execute(Instruction inst){
+    bool execute(Instruction inst)
+    {
         pc++;
-        switch(inst.instr){
-            case InstructionType::add :  
-                if(inst.dest==0){
-                    cout<<"Error : zero register can not be modified at instruction ";
-                    return false;
-                }
-                if(inst.src2==-1){
-                    registers.post(inst.dest,registers.get(inst.src1)+inst.imvalue);
-                    return true;
-                }
-                else{
-                    registers.post(inst.dest,registers.get(inst.src1)+registers.get(inst.src2));
-                    return true;
-                }
-                                         break;
-            case InstructionType::sub :  
-                if(inst.dest==0){
-                    cout<<"Error : zero register can not be modified at instruction ";
-                    return false;
-                }
-                if(inst.src2==-1){
-                    registers.post(inst.dest,registers.get(inst.src1)-inst.imvalue);
-                    return true;
-                }
-                else{
-                    registers.post(inst.dest,registers.get(inst.src1)-registers.get(inst.src2));
-                    return true;
-                }                      
-                                         break;
-            case InstructionType::mul :   
-                if(inst.dest==0){
-                    cout<<"Error : zero register can not be modified at instruction ";
-                    return false;
-                }
-                if(inst.src2==-1){
-                    registers.post(inst.dest,registers.get(inst.src1)*inst.imvalue);
-                    return true;
-                }
-                else{
-                    registers.post(inst.dest,registers.get(inst.src1)*registers.get(inst.src2));
-                    return true;
-                }
-                                         break;
-            case InstructionType::slt :  
-                if(inst.dest==0){
-                    cout<<"Error : zero register can not be modified at instruction ";
-                    return false;
-                }
-                if(inst.src2==-1){
-               	    if (registers.get(inst.src1)<inst.imvalue){
-                    registers.post(inst.dest,1);
-                    return true;
-                    }
-                    else{
-                    registers.post(inst.dest,0);
-                    return true;
-                    }
-                }
-                else{
-                    if (registers.get(inst.src1)<registers.get(inst.src2)){
-                    registers.post(inst.dest,1);
-                    return true;
-                    }
-                    else{
-                    registers.post(inst.dest,0);
-                    return true;
-                    }
-                }
-                                         break;
-            case InstructionType::beq :
-            	if(inst.dest==0){
-                    cout<<"Error : zero register can not be modified at instruction ";
-                    return false;
-                }
-                if(inst.src2==-1){
-               	    if (registers.get(inst.src1)==inst.imvalue){
-               	    if(labels.find(inst.jumplabel)!=labels.end()){
-                    pc=labels[inst.jumplabel];
-                    return true;
-                    }
-                    else{
-                    cout<<"Invalid jump address";
-                    return false;
-                    }
-                    }
-                    else{
-                    return true;
-                    }
-                }
-                else{
-                    if (registers.get(inst.src1)==registers.get(inst.src2)){
-               	    if(labels.find(inst.jumplabel)!=labels.end()){
-                    pc=labels[inst.jumplabel];
-                    return true;
-                    }
-                    else{
-                    cout<<"Invalid jump address";
-                    return false;
-                    }
-                    }
-                    else{
-                    return true;
-                    }
-                    } 
-                                        
-                                         break;
-            case InstructionType::bne :   
-                if(inst.dest==0){
-                    cout<<"Error : zero register can not be modified at instruction ";
-                    return false;
-                }
-                if(inst.src2==-1){
-               	    if (registers.get(inst.src1)!=inst.imvalue){
-               	    if(labels.find(inst.jumplabel)!=labels.end()){
-                    pc=labels[inst.jumplabel];
-                    return true;
-                    }
-                    else{
-                    cout<<"Invalid jump address";
-                    return false;
-                    }
-                    }
-                    else{
-                    return true;
-                    }
-                }
-                else{
-                    if (registers.get(inst.src1)!=registers.get(inst.src2)){
-               	    if(labels.find(inst.jumplabel)!=labels.end()){
-                    pc=labels[inst.jumplabel];
-                    return true;
-                    }
-                    else{
-                    cout<<"Invalid jump address";
-                    return false;
-                    }
-                    }
-                    else{
-                    return true;
-                    }
-                    } 
-                                         break;
-            case InstructionType::j   :   
-                if(labels.find(inst.jumplabel)!=labels.end()){
-                    pc=labels[inst.jumplabel];
-                    return true;
-                    }
-                    else{
-                    cout<<"Invalid jump address";
-                    return false;
-                    }                        
-                                         break;
-            case InstructionType::lw  :
-            { 
-                if(inst.dest==0){
-                    cout<<"Error : zero register can not be modified at instruction ";
-                    return false;
-                }  
-                int index1=inst.imvalue+registers.get(inst.src1);
-                if (index1>=0 && index1<=262144){
-                registers.post(inst.dest,mem.get(index1)); 
+        int index1,index2;
+        switch (inst.instr)
+        {
+        case InstructionType::add:
+            if (inst.dest == 0)
+            {
+                cout << "Error : zero register can not be modified at instruction ";
+                return false;
+            }
+            if (inst.src2 == -1)
+            {
+                registers.post(inst.dest, registers.get(inst.src1) + inst.imvalue);
                 return true;
-                }
-                else{
-                cout<<"Invalid address in memory";
+            }
+            else
+            {
+                registers.post(inst.dest, registers.get(inst.src1) + registers.get(inst.src2));
+                return true;
+            }
+            break;
+        case InstructionType::sub:
+            if (inst.dest == 0)
+            {
+                cout << "Error : zero register can not be modified at instruction ";
                 return false;
-                }                       
-                                         break;
-                                         }
-            case InstructionType::sw  :  
-            { 
-            	int index2=inst.imvalue+registers.get(inst.src1);
-            	if (index2>=0 && index2<=262144){
-                mem.post(registers.get(inst.dest),index2);
-                return true;                   
-                }
-                else{
-                cout<<"Invalid address in memory";
+            }
+            if (inst.src2 == -1)
+            {
+                registers.post(inst.dest, registers.get(inst.src1) - inst.imvalue);
+                return true;
+            }
+            else
+            {
+                registers.post(inst.dest, registers.get(inst.src1) - registers.get(inst.src2));
+                return true;
+            }
+            break;
+        case InstructionType::mul:
+            if (inst.dest == 0)
+            {
+                cout << "Error : zero register can not be modified at instruction ";
                 return false;
-                }     
-                                         break;
-                                         }
-            case InstructionType::addi:  
-            { 
-                if(inst.dest==0){
-                    cout<<"Error : zero register can not be modified at instruction ";
-                    return false;
+            }
+            if (inst.src2 == -1)
+            {
+                registers.post(inst.dest, registers.get(inst.src1) * inst.imvalue);
+                return true;
+            }
+            else
+            {
+                registers.post(inst.dest, registers.get(inst.src1) * registers.get(inst.src2));
+                return true;
+            }
+            break;
+        case InstructionType::slt:
+            if (inst.dest == 0)
+            {
+                cout << "Error : zero register can not be modified at instruction ";
+                return false;
+            }
+            if (inst.src2 == -1)
+            {
+                if (registers.get(inst.src1) < inst.imvalue)
+                {
+                    registers.post(inst.dest, 1);
+                    return true;
                 }
-                    registers.post(inst.dest,registers.get(inst.src1)+inst.imvalue);
-                    return true;                      
-                                         break;
-                                         }
-            default: return false;
-                     break;
+                else
+                {
+                    registers.post(inst.dest, 0);
+                    return true;
+                }
+            }
+            else
+            {
+                if (registers.get(inst.src1) < registers.get(inst.src2))
+                {
+                    registers.post(inst.dest, 1);
+                    return true;
+                }
+                else
+                {
+                    registers.post(inst.dest, 0);
+                    return true;
+                }
+            }
+            break;
+        case InstructionType::beq:
+            if (inst.src2 == -1)
+            {
+                if (registers.get(inst.src1) == inst.imvalue)
+                {
+                    pc = inst.dest;
+                    return true;
+                }
+                else
+                {
+                    return true;
+                }
+            }
+            else
+            {
+                if (registers.get(inst.src1) == registers.get(inst.src2))
+                {
+                    pc = inst.dest;
+                    return true;
+                }
+                else
+                {
+                    return true;
+                }
+            }
+
+            break;
+        case InstructionType::bne:
+            if (inst.src2 == -1)
+            {
+                if (registers.get(inst.src1) != inst.imvalue)
+                {
+                    pc = inst.dest;
+                    return true;
+                }
+                else
+                {
+                    return true;
+                }
+            }
+            else
+            {
+                if (registers.get(inst.src1) != registers.get(inst.src2))
+                {
+                    pc = labels[inst.jumplabel];
+                    return true;
+                }
+                else
+                {
+                    return true;
+                }
+            }
+            break;
+        case InstructionType::j:
+            pc = inst.dest;
+            return true;
+            break;
+        case InstructionType::lw:
+            if (inst.dest == 0)
+            {
+                cout << "Error : zero register can not be modified at instruction ";
+                return false;
+            }
+            index1 = inst.imvalue + registers.get(inst.src1);
+            if (index1 >= 0 && index1 <= 262144)
+            {
+                registers.post(inst.dest, mem.get(index1));
+                return true;
+            }
+            else
+            {
+                cout << "Invalid address in register at instruction ";
+                return false;
+            }
+            break;
+        case InstructionType::sw:
+            index2 = inst.imvalue + registers.get(inst.src1);
+            if (index2 >= 0 && index2 <= 262143)
+            {
+                mem.post(index2, registers.get(inst.dest));
+                return true;
+            }
+            else
+            {
+                cout << "Invalid address in memory";
+                return false;
+            }
+            break;
+        case InstructionType::addi:
+            if (inst.dest == 0)
+            {
+                cout << "Error : zero register can not be modified at instruction ";
+                return false;
+            }
+            registers.post(inst.dest, registers.get(inst.src1) + inst.imvalue);
+            return true;
+            break;
+
+        default:
+            cout<<" Invalid Instruction ";
+            return false;
+            break;
         }
-        return true;
+        return false;
     }
 
     void Removespace(string &str)
@@ -489,9 +507,11 @@ private:
     bool checkNum(string num)
     {
         int j = num.length() - 1;
-        if(j==-1){
-        cout<<"invalid/empty aregument ";
-        return false;}
+        if (j == -1)
+        {
+            cout << "invalid/empty aregument ";
+            return false;
+        }
         while (j >= 0 && (num[j] == ' ' || num[j] == '\t'))
             j--;
         string str = num.substr(0, j + 1);
@@ -945,7 +965,7 @@ int main(int argc, char *argv[])
 {
     string fileName = (argc > 1) ? argv[1] : "code.txt";
     Simulator sim;
-    sim.loadinstructions(fileName); 
+    sim.loadinstructions(fileName);
     sim.run();
     return 0;
 }
