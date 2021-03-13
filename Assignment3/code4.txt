@@ -1,3 +1,8 @@
-sw $r2 ,100($zero)
+j end
+# comment 
+label:
+add $r1,$r2,-20
+end:
+bne $zero, $r1 ,label
 
 

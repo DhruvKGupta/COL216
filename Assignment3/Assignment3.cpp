@@ -739,7 +739,7 @@ private:
                 cout << " Syntax Error at line ";
                 return false;
             }
-            operands = operands.substr(j + 2);
+            operands = operands.substr(i + 1);
             Removespace(operands);
             int x = operands.length() - 1;
             while (x >= 0 && operands[x] == ' ' || operands[x] == '\t')
@@ -981,7 +981,7 @@ int main(int argc, char *argv[])
 {
     string fileName = (argc > 1) ? argv[1] : "code.txt";
     Simulator sim;
-    if (sim.loadinstructions(fileName))
+    if (sim.loadinstructions("d:\\IITD\\COL216\\Assignment1\\Assignment3\\code4.txt"))
     {
         sim.run();
     }
