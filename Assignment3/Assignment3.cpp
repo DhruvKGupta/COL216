@@ -102,7 +102,7 @@ private:
 class Simulator
 {
 public:
-    void loadinstructions(string fileName)
+    bool loadinstructions(string fileName)
     {
         clear();
         string line;
@@ -126,9 +126,9 @@ public:
                     bool cont = parse(line); // This line is without comment and without spaces.
                     if (!cont)
                     {
-                        cout << i;
+                        cout << i<<endl;
                         file.close();
-                        abort();
+                        return false;
                     }
                     i++;
                 }
@@ -138,7 +138,7 @@ public:
         else
         {
             cout << "File does not exist\nPlease enter correct file name\n";
-            abort();
+            return false;
         }
         for (int i = 0; i < instructions.size(); i++)
         {
@@ -152,16 +152,17 @@ public:
                 if (instructions[i].dest < 0 || instructions[i].dest > instructions.size())
                 {
                     cout << " Illegal jump at instruction " << i + 1 << "\n";
-                    abort();
+                    return false;
                 }
             }
         }
+        return true;
     }
     void run()
     {
         pc = 0;
         clock = 0;
-        while (pc < instructions.size() && clock < 1000)
+        while (pc < instructions.size())
         {
             num_times[pc + 1] = (num_times.find(pc + 1) == num_times.end()) ? 1 : num_times[pc + 1] + 1;
             bool done = execute(instructions[pc]);
@@ -833,6 +834,7 @@ private:
             if (j >= 0)
             {
                 string reg = operands.substr(0, j + 1);
+                cout<<reg;
                 if (checkNum(reg))
                 { //ye function likhna padega
                     offset = stoi(reg);
@@ -965,7 +967,8 @@ int main(int argc, char *argv[])
 {
     string fileName = (argc > 1) ? argv[1] : "code.txt";
     Simulator sim;
-    sim.loadinstructions(fileName);
+    if(sim.loadinstructions(fileName)){
     sim.run();
+    }
     return 0;
 }
