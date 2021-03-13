@@ -509,7 +509,7 @@ private:
     }
     bool checkNum(string num)
     {
-    	Removespace(num);
+        Removespace(num);
         int j = num.length() - 1;
         if (j == -1)
         {
@@ -519,20 +519,23 @@ private:
         while (j >= 0 && (num[j] == ' ' || num[j] == '\t'))
             j--;
         string str = num.substr(0, j + 1);
-        int l=str.length();
+        int l = str.length();
         for (int i = 0; i < l; i++)
         {
-            if(i==0 && l>1){
-            if (isdigit(str[i])||str[i]=='+'||str[i]=='-')
-                continue;
-            else{
-            	return false;
-            	}
-            	}
-            else{
-            	if(!isdigit(str[i]))
-            	return false;
-            }	
+            if (i == 0 && l > 1)
+            {
+                if (isdigit(str[i]) || str[i] == '+' || str[i] == '-')
+                    continue;
+                else
+                {
+                    return false;
+                }
+            }
+            else
+            {
+                if (!isdigit(str[i]))
+                    return false;
+            }
         }
 
         return true;
@@ -595,15 +598,17 @@ private:
             cout << "Syntax Error at line ";
             return false;
         }
-        if (ins.length()==0){
-        return true;}
+        if (ins.length() == 0)
+        {
+            return true;
+        }
 
         int i = 0;
         while (i < 4 && ins[i] != ' ' && ins[i] != '\t' && ins[i] != '\0')
             i++;
 
         string op = ins.substr(0, i);
-        if (ins.length() <= i) 
+        if (ins.length() <= i)
         {
             cout << "Syntax Error at line ";
             return false;
@@ -841,7 +846,7 @@ private:
                 return false;
             }
             j = i - 1;
-            while (j >= 0 && operands[j] == ' ' || operands[j] == '\t')
+            while (j >= 0 && (operands[j] == ' ' || operands[j] == '\t'))
             {
                 j--;
             }
@@ -850,7 +855,7 @@ private:
             {
                 string reg = operands.substr(0, j + 1);
                 if (checkNum(reg))
-                { 
+                {
                     offset = stoi(reg);
                 }
                 else
@@ -959,7 +964,7 @@ private:
                 cout << " Syntax Error at line ";
                 return false;
             }
-            operands = operands.substr(j+1);
+            operands = operands.substr(j + 1);
             Removespace(operands);
             if (!operands.empty())
             {
@@ -981,7 +986,7 @@ int main(int argc, char *argv[])
 {
     string fileName = (argc > 1) ? argv[1] : "code.txt";
     Simulator sim;
-    if (sim.loadinstructions("d:\\IITD\\COL216\\Assignment1\\Assignment3\\code4.txt"))
+    if (sim.loadinstructions(fileName))
     {
         sim.run();
     }
