@@ -914,7 +914,7 @@ private:
                 cout << " Syntax Error:invalid register at line ";
                 return false;
             }
-            operands = operands.substr(j + 2);
+            operands = operands.substr(i + 1);
             Removespace(operands);
             i = operands.find(',');
             if (i == -1)
@@ -934,7 +934,7 @@ private:
                 cout << " Syntax Error at line ";
                 return false;
             }
-            operands = operands.substr(j + 2);
+            operands = operands.substr(i + 1);
             Removespace(operands);
             i = operands.length(); //yaha se kuch changes kiye hai do , hi hote hai
             j = i - 1;
@@ -959,7 +959,7 @@ private:
                 cout << " Syntax Error at line ";
                 return false;
             }
-            operands = operands.substr(j + 2);
+            operands = operands.substr(j+1);
             Removespace(operands);
             if (!operands.empty())
             {
