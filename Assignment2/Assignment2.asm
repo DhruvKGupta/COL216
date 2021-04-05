@@ -65,7 +65,7 @@ number:
 	addi $s2,$s2,-48	#calculating exact value of the number from character
 
 	subu $sp, $sp, 4 	# push array[i]
-	sw $s2, ($sp)
+	sw $s2, 570
 	addi $t1,$t1,1
 
 	j increment		#skip to increment index and proceed

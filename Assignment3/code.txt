@@ -1,4 +1,1 @@
-begin: add $r2 , $r3 , $r4 #Hi
-add $r3,$r4,16 # Hi
-# comment
-add $3, $4, $zero
+sw $r0, 5000000000000($r2)
