@@ -291,7 +291,7 @@ public:
                         return;
                     }
                     if (mem.get_process_end() == clock)
-                        Mem_instructions.remove(current_mem);
+                        Mem_instructions.erase(current_mem);
                 }
                 else
                     wait_for_DRAM();
@@ -353,7 +353,7 @@ private:
             cout << "\tcycle " << (clock) << " : Waiting for DRAM to return\n";
         }
         clock = mem.get_process_end();
-        Mem_instructions.remove(current_mem);
+        Mem_instructions.erase(current_mem);
     }
 
     bool is_independent(Instruction ins)
