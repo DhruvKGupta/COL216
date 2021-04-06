@@ -91,10 +91,22 @@ public:
         rowbuffer = {0};
         row = -1;
         bufferupdates = 0;
+        process_end = 0;
     }
 
-    int get_current_row(){
+    int get_current_row()
+    {
         return row;
+    }
+
+    int get_process_end()
+    {
+        return process_end;
+    }
+
+    void set_process_end(int end)
+    {
+        process_end = end;
     }
 
     int get_without_buffer(int index)
@@ -175,6 +187,7 @@ private:
     array<int, 256> rowbuffer = {0};
     int row = -1;
     int bufferupdates = 0;
+    int process_end = 0;
 };
 
 class Simulator
@@ -241,159 +254,54 @@ public:
         pc = 0;
         clock = 0;
         cout << "Every Cycle description :\n\n";
-        while (pc < instructions.size())
+        while (pc < instructions.size() || !(Mem_instructions.empty()))
         {
+            ++clock;
             // num_times[pc + 1] = (num_times.find(pc + 1) == num_times.end()) ? 1 : num_times[pc + 1] + 1;
-            Instruction ins = instructions[pc];
-            cout << "\tcycle " << (++clock) << " : ";
-            pair<bool, int> done = execute(ins);
-            if (!done.first)
-            {
-                cout << pc << "\n";
-                return;
-            }
-            done.second = done.second - 1;
-            if (done.second > 1)
-            {
-                cout << "\tcycle " << (clock + 1) << "-" << (clock + done.second) << " : ";
-                if (ins.instr == InstructionType::lw)
+            if (clock > mem.get_process_end() && !(Mem_instructions.empty()))
+            {   // ---------------------------------          YE COMPLETE KRNA HAI     ------------------------------------------------------------------
+                pair<bool, int> done_mem;
+                if (mem.get_current_row() == -1)
                 {
-                    cout << "\tDRAM :\t$" << ins.dest << " = " << registers.get(ins.dest) << " ; ";
-                    mem_modified.push_back(ins.imvalue + registers.get(ins.src1));
+                    done_mem = execute_mem_instruction(Mem_instructions.begin());
                 }
                 else
                 {
-                    int index2 = ins.imvalue + registers.get(ins.src1);
-                    cout << "\tDRAM :\tmemory address " << index2 << "-" << index2 + 3 << " = " << mem.get_without_buffer(index2 / 4) << " ; ";
-
-                    mem_modified.push_back(index2);
-                }
-            }
-            else if (done.second == 1)
-            {
-                cout << "\tcycle " << (clock + 1) << " : ";
-                if (ins.instr == InstructionType::lw)
-                {
-                    cout << "\tDRAM :\t$" << ins.dest << " = " << registers.get(ins.dest) << " ; ";
-                    mem_modified.push_back(ins.imvalue + registers.get(ins.src1));
-                }
-                else
-                {
-                    int index2 = ins.imvalue + registers.get(ins.src1);
-                    cout << "\tDRAM :\tmemory address " << index2 << "-" << index2 + 3 << " = " << mem.get_without_buffer(index2 / 4) << " ; ";
-                    mem_modified.push_back(index2);
-                }
-            }
-            if (done.second == COL_ACCESS_DELAY)
-            {
-                cout << "Buffer contains the required row\n";
-                if (done.second > 1)
-                {
-                    cout << "\tcycle " << (clock + 1) << "-" << (clock + done.second) << " : \tDRAM :\tAccess column\n";
-                }
-                else if (done.second == 1)
-                {
-                    cout << "\tcycle " << (clock + 1) << " : \tDRAM :\tAccess column\n";
-                }
-            }
-            else if (done.second == ROW_ACCESS_DELAY + COL_ACCESS_DELAY)
-            {
-                cout << "Buffer is Empty. Required row from memory is copied to buffer\n";
-                if (ROW_ACCESS_DELAY > 1)
-                    cout << "\tcycle " << (clock + 1) << "-" << (clock + ROW_ACCESS_DELAY) << " : \tDRAM :\tActivate required row to buffer\n";
-                else
-                    cout << "\tcycle " << (clock + 1) << " : \tDRAM :\tActivate required row to buffer\n";
-
-                if (COL_ACCESS_DELAY > 1)
-                    cout << "\tcycle " << (clock + ROW_ACCESS_DELAY + 1) << "-" << (clock + done.second) << " : \tDRAM :\tAccess column\n";
-                else
-                    cout << "\tcycle " << (clock + ROW_ACCESS_DELAY + 1) << " : \tDRAM :\tAccess column\n";
-            }
-            else if (done.second == (2 * ROW_ACCESS_DELAY + COL_ACCESS_DELAY))
-            {
-                cout << "Buffer is copied back and required row is copied to buffer\n";
-                if (ROW_ACCESS_DELAY > 1)
-                {
-                    cout << "\tcycle " << (clock + 1) << "-" << (clock + ROW_ACCESS_DELAY) << " : \tDRAM :\tCopy the buffer back\n";
-                    cout << "\tcycle " << (clock + ROW_ACCESS_DELAY + 1) << "-" << (clock + 2 * ROW_ACCESS_DELAY) << " : \tDRAM :\tActivate required row to buffer\n";
-                }
-                else
-                {
-                    cout << "\tcycle " << (clock + 1) << " : \tDRAM :\tCopy the buffer back\n";
-                    cout << "\tcycle " << (clock + ROW_ACCESS_DELAY + 1) << " : \tDRAM :\tActivate required row to buffer\n";
-                }
-                if (COL_ACCESS_DELAY > 1)
-                    cout << "\tcycle " << (clock + 2 * ROW_ACCESS_DELAY + 1) << "-" << (clock + done.second) << " : \tDRAM :\tAccess column\n";
-                else
-                    cout << "\tcycle " << (clock + 2 * ROW_ACCESS_DELAY + 1) << " : \tDRAM :\tAccess column\n";
-            }
-
-            int i = clock + done.second;
-            if (mode)
-            {
-                while (clock < i && pc < instructions.size())
-                {
-                    Instruction ins2 = instructions[pc];
-                    if (ins2.instr == InstructionType::sw || ins2.instr == InstructionType::lw)
-                        break;
-                    else
+                    list<pair<Instruction, int>>::iterator it = Mem_instructions.begin();
+                    while (it != Mem_instructions.end())
                     {
-                        if (ins.instr == InstructionType::lw)
+                        if ((*it).first.instr == InstructionType::lw)
                         {
-                        	bool out=false;
-                        	deque<pair<Instruction,int>>::iterator it = Mem_instructions.begin();
-                        	while(it!=Mem_instructions.end()){
-                        		int orig_register = (*it).first.dest;
-                            		if (ins2.dest == orig_register || ins2.src1 == orig_register || ins2.src2 == orig_register){
-                                	out = true;
-                                	break;	
-                                	}
-                                }
-                                if(out) break;
                         }
                     }
-                    cout << "\tcycle " << (++clock) << " : ";
-                    pair<bool, int> done2 = execute(ins2);
-                    if (!done2.first)
+                }
+                // ---------------------------------           YAHAN TAK    ------------------------------------------------------------------------------
+            }
+            if (pc < instructions.size())
+            {
+                Instruction ins = instructions[pc];
+                bool independent = is_independent(ins);
+                if (independent)
+                {
+                    cout << "\tcycle " << clock << " : ";
+                    pair<bool, int> done = execute(ins);
+                    if (!done.first)
                     {
                         cout << pc << "\n";
                         return;
                     }
+                    if (mem.get_process_end() == clock)
+                        Mem_instructions.remove(current_mem);
                 }
-                if (clock + done.second > i)
-                {
-                    if ((i - clock) > 1)
-                    {
-                        cout << "\tcycle " << (clock + 1) << "-" << i << " : Waiting for DRAM to return\n";
-                    }
-                    else if (i == clock + 1)
-                    {
-                        cout << "\tcycle " << (clock + 1) << " : Waiting for DRAM to return\n";
-                    }
-                }
+                else
+                    wait_for_DRAM();
             }
-            clock = i;
+            else
+                wait_for_DRAM();
+
             //registers.print(hex);
         }
-        cout << "\nStatistics :\n\n";
-        cout << "\tNumber of clock cycles is " << clock << "\n";
-        cout << "\tNumber of Buffer updates is " << mem.getbuffer() << "\n\n";
-        if (!mem_modified.empty())
-        {
-            sort(mem_modified.begin(), mem_modified.end());
-            vector<int>::iterator mem_m;
-            mem_m = unique(mem_modified.begin(), mem_modified.end());
-            mem_modified.resize(distance(mem_modified.begin(), mem_m));
-            cout << "Memory content at the end :\n\n";
-            for (int i = 0; i < mem_modified.size(); i++)
-            {
-                cout << "\t" << mem_modified[i] << "-" << mem_modified[i] + 3 << " : " << mem.get_without_buffer(mem_modified[i] / 4) << "\n";
-            }
-        }
-        else
-        {
-            cout << "No Memory accesses \n";
-        }
+        printstatistics();
         // for (auto x : num_times)
         // {
         //     cout << "Instruction " << x.first << " is run " << x.second << " times\n";
@@ -431,7 +339,186 @@ private:
     bool hex = true;
     bool mode = true;
     vector<int> mem_modified;
-    deque<pair<Instruction,int>> Mem_instructions; 
+    list<pair<Instruction, int>> Mem_instructions;
+    list<pair<Instruction, int>>::iterator current_mem;
+
+    void wait_for_DRAM()
+    {
+        if ((mem.get_process_end() - clock) > 0)
+        {
+            cout << "\tcycle " << (clock) << "-" << mem.get_process_end() << " : Waiting for DRAM to return\n";
+        }
+        else if (mem.get_process_end() == clock)
+        {
+            cout << "\tcycle " << (clock) << " : Waiting for DRAM to return\n";
+        }
+        clock = mem.get_process_end();
+        Mem_instructions.remove(current_mem);
+    }
+
+    bool is_independent(Instruction ins)
+    {
+        if (ins.instr == InstructionType::sw || ins.instr == InstructionType::lw)
+        {
+            list<pair<Instruction, int>>::iterator it = Mem_instructions.begin();
+            while (it != Mem_instructions.end())
+            {
+                if ((*it).first.instr == InstructionType::lw)
+                {
+                    int orig_register = (*it).first.dest;
+                    if (ins.dest == orig_register)
+                    {
+                        return false;
+                    }
+                }
+            }
+        }
+        else
+        {
+            list<pair<Instruction, int>>::iterator it = Mem_instructions.begin();
+            while (it != Mem_instructions.end())
+            {
+                if ((*it).first.instr == InstructionType::lw)
+                {
+                    int orig_register = (*it).first.dest;
+                    if (ins.dest == orig_register || ins.src1 == orig_register || ins.src2 == orig_register)
+                    {
+                        return false;
+                    }
+                }
+            }
+        }
+        return true;
+    }
+
+    pair<bool, int> execute_mem_instruction(list<pair<Instruction, int>>::iterator iter)
+    {
+        Instruction inst = *iter;
+        pair<bool, int> answer = make_pair(true, 1);
+        int index1, index2;
+        if (inst.instr == InstructionType::lw)
+        {
+            index1 = inst.imvalue + registers.get(inst.src1);
+            pair<int, int> ans = mem.get(index1 / 4);
+            registers.post(inst.dest, ans.first);
+            answer.second = ans.second;
+            return answer;
+        }
+        else if (inst.instr == InstructionType::sw)
+        {
+            index2 = inst.imvalue + registers.get(inst.src1);
+            int time = mem.post(index2 / 4, registers.get(inst.dest));
+            answer.second = time;
+            return answer;
+        }
+        else
+        {
+            cout << " Invalid Instruction ";
+            answer.first = false;
+            return answer;
+        }
+    }
+
+    void printstatistics()
+    {
+        cout << "\nStatistics :\n\n";
+        cout << "\tNumber of clock cycles is " << clock << "\n";
+        cout << "\tNumber of Buffer updates is " << mem.getbuffer() << "\n\n";
+        if (!mem_modified.empty())
+        {
+            sort(mem_modified.begin(), mem_modified.end());
+            vector<int>::iterator mem_m;
+            mem_m = unique(mem_modified.begin(), mem_modified.end());
+            mem_modified.resize(distance(mem_modified.begin(), mem_m));
+            cout << "Memory content at the end :\n\n";
+            for (int i = 0; i < mem_modified.size(); i++)
+            {
+                cout << "\t" << mem_modified[i] << "-" << mem_modified[i] + 3 << " : " << mem.get_without_buffer(mem_modified[i] / 4) << "\n";
+            }
+        }
+        else
+        {
+            cout << "No Memory accesses \n";
+        }
+    }
+
+    void printcycledata(pair<bool, int> done, Instruction ins)
+    {
+        if (done.second > 1)
+        {
+            cout << "\tcycle " << (clock + 1) << "-" << (clock + done.second) << " : ";
+            if (ins.instr == InstructionType::lw)
+            {
+                cout << "\tDRAM :\t$" << ins.dest << " = " << registers.get(ins.dest) << " ; ";
+                mem_modified.push_back(ins.imvalue + registers.get(ins.src1));
+            }
+            else
+            {
+                int index2 = ins.imvalue + registers.get(ins.src1);
+                cout << "\tDRAM :\tmemory address " << index2 << "-" << index2 + 3 << " = " << mem.get_without_buffer(index2 / 4) << " ; ";
+
+                mem_modified.push_back(index2);
+            }
+        }
+        else if (done.second == 1)
+        {
+            cout << "\tcycle " << (clock + 1) << " : ";
+            if (ins.instr == InstructionType::lw)
+            {
+                cout << "\tDRAM :\t$" << ins.dest << " = " << registers.get(ins.dest) << " ; ";
+                mem_modified.push_back(ins.imvalue + registers.get(ins.src1));
+            }
+            else
+            {
+                int index2 = ins.imvalue + registers.get(ins.src1);
+                cout << "\tDRAM :\tmemory address " << index2 << "-" << index2 + 3 << " = " << mem.get_without_buffer(index2 / 4) << " ; ";
+                mem_modified.push_back(index2);
+            }
+        }
+        if (done.second == COL_ACCESS_DELAY)
+        {
+            cout << "Buffer contains the required row\n";
+            if (done.second > 1)
+            {
+                cout << "\tcycle " << (clock + 1) << "-" << (clock + done.second) << " : \tDRAM :\tAccess column\n";
+            }
+            else if (done.second == 1)
+            {
+                cout << "\tcycle " << (clock + 1) << " : \tDRAM :\tAccess column\n";
+            }
+        }
+        else if (done.second == ROW_ACCESS_DELAY + COL_ACCESS_DELAY)
+        {
+            cout << "Buffer is Empty. Required row from memory is copied to buffer\n";
+            if (ROW_ACCESS_DELAY > 1)
+                cout << "\tcycle " << (clock + 1) << "-" << (clock + ROW_ACCESS_DELAY) << " : \tDRAM :\tActivate required row to buffer\n";
+            else
+                cout << "\tcycle " << (clock + 1) << " : \tDRAM :\tActivate required row to buffer\n";
+
+            if (COL_ACCESS_DELAY > 1)
+                cout << "\tcycle " << (clock + ROW_ACCESS_DELAY + 1) << "-" << (clock + done.second) << " : \tDRAM :\tAccess column\n";
+            else
+                cout << "\tcycle " << (clock + ROW_ACCESS_DELAY + 1) << " : \tDRAM :\tAccess column\n";
+        }
+        else if (done.second == (2 * ROW_ACCESS_DELAY + COL_ACCESS_DELAY))
+        {
+            cout << "Buffer is copied back and required row is copied to buffer\n";
+            if (ROW_ACCESS_DELAY > 1)
+            {
+                cout << "\tcycle " << (clock + 1) << "-" << (clock + ROW_ACCESS_DELAY) << " : \tDRAM :\tCopy the buffer back\n";
+                cout << "\tcycle " << (clock + ROW_ACCESS_DELAY + 1) << "-" << (clock + 2 * ROW_ACCESS_DELAY) << " : \tDRAM :\tActivate required row to buffer\n";
+            }
+            else
+            {
+                cout << "\tcycle " << (clock + 1) << " : \tDRAM :\tCopy the buffer back\n";
+                cout << "\tcycle " << (clock + ROW_ACCESS_DELAY + 1) << " : \tDRAM :\tActivate required row to buffer\n";
+            }
+            if (COL_ACCESS_DELAY > 1)
+                cout << "\tcycle " << (clock + 2 * ROW_ACCESS_DELAY + 1) << "-" << (clock + done.second) << " : \tDRAM :\tAccess column\n";
+            else
+                cout << "\tcycle " << (clock + 2 * ROW_ACCESS_DELAY + 1) << " : \tDRAM :\tAccess column\n";
+        }
+    }
 
     pair<bool, int> execute(Instruction inst)
     {
@@ -614,15 +701,16 @@ private:
             index1 = inst.imvalue + registers.get(inst.src1);
             if (index1 >= 0 && index1 <= 1048572 && index1 % 4 == 0)
             {
-                pair<int, int> ans = mem.get(index1 / 4);
-                registers.post(inst.dest, ans.first);
+                //pair<int, int> ans = mem.get(index1 / 4);
+                //registers.post(inst.dest, ans.first);
+                Mem_instructions.push_back(make_pair<Instruction, int>(inst, index1 / 1024));
                 cout << "\tlw :\tDRAM request issued \n";
-                answer.second = ans.second + 1;
+                //answer.second = ans.second + 1;
                 return answer;
             }
             else
             {
-                cout << "Invalid address in register at instruction ";
+                cout << "Invalid address at instruction ";
                 answer.first = false;
                 return answer;
             }
@@ -631,14 +719,15 @@ private:
             index2 = inst.imvalue + registers.get(inst.src1);
             if (index2 >= 0 && index2 <= 1048572 && index2 % 4 == 0)
             {
-                int time = mem.post(index2 / 4, registers.get(inst.dest));
+                //int time = mem.post(index2 / 4, registers.get(inst.dest));
+                Mem_instructions.push_back(make_pair<Instruction, int>(inst, index2 / 1024));
                 cout << "\tsw : \tDRAM request issued \n";
-                answer.second = time + 1;
+                //answer.second = time + 1;
                 return answer;
             }
             else
             {
-                cout << "Invalid address in memory ";
+                cout << "Invalid address at instruction ";
                 answer.first = false;
                 return answer;
             }
@@ -1282,8 +1371,9 @@ int main(int argc, char *argv[])
     {
         sim.changemode(false);
     }
-    else if(mode!=2){
-        cout<<"Invalid mode\n";
+    else if (mode != 2)
+    {
+        cout << "Invalid mode\n";
         return 0;
     }
     if (sim.loadinstructions(fileName))
