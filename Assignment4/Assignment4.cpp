@@ -338,11 +338,18 @@ public:
                         break;
                     else
                     {
-                        int orig_register = ins.dest;
                         if (ins.instr == InstructionType::lw)
                         {
-                            if (ins2.dest == orig_register || ins2.src1 == orig_register || ins2.src2 == orig_register)
-                                break;
+                        	bool out=false;
+                        	deque<pair<Instruction,int>>::iterator it = Mem_instructions.begin();
+                        	while(it!=Mem_instructions.end()){
+                        		int orig_register = (*it).first.dest;
+                            		if (ins2.dest == orig_register || ins2.src1 == orig_register || ins2.src2 == orig_register){
+                                	out = true;
+                                	break;	
+                                	}
+                                }
+                                if(out) break;
                         }
                     }
                     cout << "\tcycle " << (++clock) << " : ";
@@ -424,7 +431,7 @@ private:
     bool hex = true;
     bool mode = true;
     vector<int> mem_modified;
-    queue<pair<Instruction,int>> Mem_instructions; 
+    deque<pair<Instruction,int>> Mem_instructions; 
 
     pair<bool, int> execute(Instruction inst)
     {
