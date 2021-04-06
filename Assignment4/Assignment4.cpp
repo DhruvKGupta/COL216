@@ -93,6 +93,10 @@ public:
         bufferupdates = 0;
     }
 
+    int get_current_row(){
+        return row;
+    }
+
     int get_without_buffer(int index)
     {
         int row_required = index / 256;
@@ -134,6 +138,7 @@ public:
     {
         int row_req = index / 256;
         int col_req = index % 256;
+        bufferupdates++;
         if (row_req == row)
         {
             rowbuffer[col_req] = data;
@@ -419,6 +424,7 @@ private:
     bool hex = true;
     bool mode = true;
     vector<int> mem_modified;
+    queue<pair<Instruction,int>> Mem_instructions; 
 
     pair<bool, int> execute(Instruction inst)
     {
