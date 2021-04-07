@@ -261,11 +261,9 @@ public:
             if (clock > mem.get_process_end() && !(Mem_instructions.empty()))
             { // ---------------------------------          YE COMPLETE KRNA HAI     ------------------------------------------------------------------
                 pair<bool, int> done_mem;
-                Instruction mem_ins;
                 if (mem.get_current_row() == -1)
                 {
                     done_mem = execute_mem_instruction(Mem_instructions.begin());
-                    mem_ins = (*Mem_instructions.begin()).first;
                 }
                 else
                 {
@@ -275,16 +273,14 @@ public:
                         if (((*it).second) == mem.get_current_row())
                         {
                             done_mem = execute_mem_instruction(it);
-                            mem_ins = (*it).first;
                             break;
                         }
                         it++;
                     }
-                    done_mem = execute_mem_instruction(Mem_instructions.begin());
-                    mem_ins = (*Mem_instructions.begin()).first;
+                    if(it == Mem_instructions.end())
+                        done_mem = execute_mem_instruction(Mem_instructions.begin());
                 }
-                printcycledata(done_mem, mem_ins);
-                mem.set_process_end(clock+done_mem.second-1);
+                
                 // ---------------------------------           YAHAN TAK    ------------------------------------------------------------------------------
             }
             if (pc < instructions.size())
@@ -415,6 +411,8 @@ private:
             pair<int, int> ans = mem.get(index1 / 4);
             registers.post(inst.dest, ans.first);
             answer.second = ans.second;
+            printcycledata(answer,inst);
+            mem.set_process_end(clock+answer.second-1);
             return answer;
         }
         else if (inst.instr == InstructionType::sw)
@@ -422,6 +420,8 @@ private:
             index2 = inst.imvalue + registers.get(inst.src1);
             int time = mem.post(index2 / 4, registers.get(inst.dest));
             answer.second = time;
+            printcycledata(answer,inst);
+            mem.set_process_end(clock+answer.second-1);
             return answer;
         }
         else
@@ -1369,15 +1369,15 @@ private:
 
 int main(int argc, char *argv[])
 {
-    ROW_ACCESS_DELAY = (argc > 2) ? stoi(argv[2]) : 10;
-    COL_ACCESS_DELAY = (argc > 3) ? stoi(argv[3]) : 2;
+    ROW_ACCESS_DELAY = /*(argc > 2) ? stoi(argv[2]) :*/ 10;
+    COL_ACCESS_DELAY = /*(argc > 3) ? stoi(argv[3]) :*/ 2;
     if (ROW_ACCESS_DELAY <= 0 || COL_ACCESS_DELAY <= 0)
     {
         cout << "Invalid DRAM access delay(s)\n";
         return 0;
     }
-    int mode = (argc > 1) ? stoi(argv[1]) : 2;
-    string fileName = (argc > 4) ? argv[4] : "code.txt";
+    int mode = /*(argc > 1) ? stoi(argv[1]) :*/ 2;
+    string fileName = /*(argc > 4) ? argv[4] :*/ "d:\\IITD\\COL216\\Assignment1\\Assignment4\\testcase10.txt";
 
     Simulator sim;
     if (mode == 1)
