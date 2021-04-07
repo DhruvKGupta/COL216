@@ -270,9 +270,15 @@ public:
                     list<pair<Instruction, int>>::iterator it = Mem_instructions.begin();
                     while (it != Mem_instructions.end())
                     {
-                        if ((*it).first.instr == InstructionType::lw)
+                        if (((*it).second)/1024==mem.get_current_row())
                         {
+                            done_mem = execute_mem_instruction(it);
+                            break;
                         }
+                    }
+                    if(it == Mem_instruction.end() && !(Mem_instructions.empty()))
+                    {
+                        done_mem = execute_mem_instruction(Mem_instructions.begin());
                     }
                 }
                 // ---------------------------------           YAHAN TAK    ------------------------------------------------------------------------------
