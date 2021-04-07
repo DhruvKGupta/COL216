@@ -240,7 +240,7 @@ public:
                 {
                     instructions[i].dest = labels[instruction.jumplabel];
                 }
-                if (instructions[i].dest < 0 || instructions[i].dest > instructions.size())
+                if (instructions[i].dest < 0 || instructions[i].dest-32 > instructions.size())
                 {
                     cout << " Illegal jump at instruction " << i + 1 << "\n";
                     return false;
@@ -643,7 +643,7 @@ private:
             {
                 if (registers.get(inst.src1) == inst.imvalue)
                 {
-                    pc = inst.dest;
+                    pc = inst.dest-32;
                     cout << "\tbeq :\tJumped\n";
                     return answer;
                 }
@@ -657,7 +657,7 @@ private:
             {
                 if (registers.get(inst.src1) == registers.get(inst.src2))
                 {
-                    pc = inst.dest;
+                    pc = inst.dest-32;
                     cout << "\tbeq :\tJumped\n";
                     return answer;
                 }
@@ -674,7 +674,7 @@ private:
             {
                 if (registers.get(inst.src1) != inst.imvalue)
                 {
-                    pc = inst.dest;
+                    pc = inst.dest-32;
                     cout << "\tbne :\tJumped\n";
                     return answer;
                 }
@@ -688,7 +688,7 @@ private:
             {
                 if (registers.get(inst.src1) != registers.get(inst.src2))
                 {
-                    pc = labels[inst.jumplabel];
+                    pc = labels[inst.jumplabel]-32;
                     cout << "\tbne :\tJumped\n";
                     return answer;
                 }
@@ -700,7 +700,7 @@ private:
             }
             break;
         case InstructionType::j:
-            pc = inst.dest;
+            pc = inst.dest-32;
             cout << "\tj :\tJumped\n";
             return answer;
             break;
@@ -945,7 +945,7 @@ private:
                 cout << "invalid label name at line ";
                 return false;
             }
-            labels[label] = instructions.size(); //variable rakh lena chahiye mere khayal se size ke liye
+            labels[label] = instructions.size()+32; //variable rakh lena chahiye mere khayal se size ke liye
             int len = (line.length()) - 1;
             if (l == len)
             {
@@ -1377,7 +1377,7 @@ int main(int argc, char *argv[])
         return 0;
     }
     int mode = /*(argc > 1) ? stoi(argv[1]) :*/ 2;
-    string fileName = /*(argc > 4) ? argv[4] :*/ "testcase10.txt";
+    string fileName = /*(argc > 4) ? argv[4] :*/ "d:\\IITD\\COL216\\Assignment1\\Assignment4\\testcase10.txt";
 
     Simulator sim;
     if (mode == 1)
