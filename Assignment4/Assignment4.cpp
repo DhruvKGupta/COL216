@@ -259,28 +259,32 @@ public:
             ++clock;
             // num_times[pc + 1] = (num_times.find(pc + 1) == num_times.end()) ? 1 : num_times[pc + 1] + 1;
             if (clock > mem.get_process_end() && !(Mem_instructions.empty()))
-            {   // ---------------------------------          YE COMPLETE KRNA HAI     ------------------------------------------------------------------
+            { // ---------------------------------          YE COMPLETE KRNA HAI     ------------------------------------------------------------------
                 pair<bool, int> done_mem;
+                Instruction mem_ins;
                 if (mem.get_current_row() == -1)
                 {
                     done_mem = execute_mem_instruction(Mem_instructions.begin());
+                    mem_ins = (*Mem_instructions.begin()).first;
                 }
                 else
                 {
                     list<pair<Instruction, int>>::iterator it = Mem_instructions.begin();
                     while (it != Mem_instructions.end())
                     {
-                        if (((*it).second)/1024==mem.get_current_row())
+                        if (((*it).second) == mem.get_current_row())
                         {
                             done_mem = execute_mem_instruction(it);
+                            mem_ins = (*it).first;
                             break;
                         }
+                        it++;
                     }
-                    if(it == Mem_instruction.end() && !(Mem_instructions.empty()))
-                    {
-                        done_mem = execute_mem_instruction(Mem_instructions.begin());
-                    }
+                    done_mem = execute_mem_instruction(Mem_instructions.begin());
+                    mem_ins = (*Mem_instructions.begin()).first;
                 }
+                printcycledata(done_mem, mem_ins);
+                mem.set_process_end(clock+done_mem.second-1);
                 // ---------------------------------           YAHAN TAK    ------------------------------------------------------------------------------
             }
             if (pc < instructions.size())
@@ -377,6 +381,7 @@ private:
                         return false;
                     }
                 }
+                it++;
             }
         }
         else
@@ -392,6 +397,7 @@ private:
                         return false;
                     }
                 }
+                it++;
             }
         }
         return true;
@@ -399,7 +405,8 @@ private:
 
     pair<bool, int> execute_mem_instruction(list<pair<Instruction, int>>::iterator iter)
     {
-        Instruction inst = *iter;
+        Instruction inst = (*iter).first;
+        current_mem = iter;
         pair<bool, int> answer = make_pair(true, 1);
         int index1, index2;
         if (inst.instr == InstructionType::lw)
@@ -452,7 +459,7 @@ private:
     {
         if (done.second > 1)
         {
-            cout << "\tcycle " << (clock + 1) << "-" << (clock + done.second) << " : ";
+            cout << "\tcycle " << (clock) << "-" << (clock + done.second-1) << " : ";
             if (ins.instr == InstructionType::lw)
             {
                 cout << "\tDRAM :\t$" << ins.dest << " = " << registers.get(ins.dest) << " ; ";
@@ -468,7 +475,7 @@ private:
         }
         else if (done.second == 1)
         {
-            cout << "\tcycle " << (clock + 1) << " : ";
+            cout << "\tcycle " << (clock) << " : ";
             if (ins.instr == InstructionType::lw)
             {
                 cout << "\tDRAM :\t$" << ins.dest << " = " << registers.get(ins.dest) << " ; ";
@@ -486,43 +493,43 @@ private:
             cout << "Buffer contains the required row\n";
             if (done.second > 1)
             {
-                cout << "\tcycle " << (clock + 1) << "-" << (clock + done.second) << " : \tDRAM :\tAccess column\n";
+                cout << "\tcycle " << (clock) << "-" << (clock + done.second-1) << " : \tDRAM :\tAccess column\n";
             }
             else if (done.second == 1)
             {
-                cout << "\tcycle " << (clock + 1) << " : \tDRAM :\tAccess column\n";
+                cout << "\tcycle " << (clock) << " : \tDRAM :\tAccess column\n";
             }
         }
         else if (done.second == ROW_ACCESS_DELAY + COL_ACCESS_DELAY)
         {
             cout << "Buffer is Empty. Required row from memory is copied to buffer\n";
             if (ROW_ACCESS_DELAY > 1)
-                cout << "\tcycle " << (clock + 1) << "-" << (clock + ROW_ACCESS_DELAY) << " : \tDRAM :\tActivate required row to buffer\n";
+                cout << "\tcycle " << (clock) << "-" << (clock + ROW_ACCESS_DELAY-1) << " : \tDRAM :\tActivate required row to buffer\n";
             else
-                cout << "\tcycle " << (clock + 1) << " : \tDRAM :\tActivate required row to buffer\n";
+                cout << "\tcycle " << (clock) << " : \tDRAM :\tActivate required row to buffer\n";
 
             if (COL_ACCESS_DELAY > 1)
-                cout << "\tcycle " << (clock + ROW_ACCESS_DELAY + 1) << "-" << (clock + done.second) << " : \tDRAM :\tAccess column\n";
+                cout << "\tcycle " << (clock + ROW_ACCESS_DELAY) << "-" << (clock + done.second-1) << " : \tDRAM :\tAccess column\n";
             else
-                cout << "\tcycle " << (clock + ROW_ACCESS_DELAY + 1) << " : \tDRAM :\tAccess column\n";
+                cout << "\tcycle " << (clock + ROW_ACCESS_DELAY) << " : \tDRAM :\tAccess column\n";
         }
         else if (done.second == (2 * ROW_ACCESS_DELAY + COL_ACCESS_DELAY))
         {
             cout << "Buffer is copied back and required row is copied to buffer\n";
             if (ROW_ACCESS_DELAY > 1)
             {
-                cout << "\tcycle " << (clock + 1) << "-" << (clock + ROW_ACCESS_DELAY) << " : \tDRAM :\tCopy the buffer back\n";
-                cout << "\tcycle " << (clock + ROW_ACCESS_DELAY + 1) << "-" << (clock + 2 * ROW_ACCESS_DELAY) << " : \tDRAM :\tActivate required row to buffer\n";
+                cout << "\tcycle " << (clock) << "-" << (clock + ROW_ACCESS_DELAY-1) << " : \tDRAM :\tCopy the buffer back\n";
+                cout << "\tcycle " << (clock + ROW_ACCESS_DELAY) << "-" << (clock + 1 * ROW_ACCESS_DELAY) << " : \tDRAM :\tActivate required row to buffer\n";
             }
             else
             {
-                cout << "\tcycle " << (clock + 1) << " : \tDRAM :\tCopy the buffer back\n";
-                cout << "\tcycle " << (clock + ROW_ACCESS_DELAY + 1) << " : \tDRAM :\tActivate required row to buffer\n";
+                cout << "\tcycle " << (clock) << " : \tDRAM :\tCopy the buffer back\n";
+                cout << "\tcycle " << (clock + ROW_ACCESS_DELAY) << " : \tDRAM :\tActivate required row to buffer\n";
             }
             if (COL_ACCESS_DELAY > 1)
-                cout << "\tcycle " << (clock + 2 * ROW_ACCESS_DELAY + 1) << "-" << (clock + done.second) << " : \tDRAM :\tAccess column\n";
+                cout << "\tcycle " << (clock + 2 * ROW_ACCESS_DELAY ) << "-" << (clock + done.second-1) << " : \tDRAM :\tAccess column\n";
             else
-                cout << "\tcycle " << (clock + 2 * ROW_ACCESS_DELAY + 1) << " : \tDRAM :\tAccess column\n";
+                cout << "\tcycle " << (clock + 2 * ROW_ACCESS_DELAY) << " : \tDRAM :\tAccess column\n";
         }
     }
 
@@ -709,7 +716,7 @@ private:
             {
                 //pair<int, int> ans = mem.get(index1 / 4);
                 //registers.post(inst.dest, ans.first);
-                Mem_instructions.push_back(make_pair<Instruction, int>(inst, index1 / 1024));
+                Mem_instructions.push_back(make_pair(inst, index1 / 1024));
                 cout << "\tlw :\tDRAM request issued \n";
                 //answer.second = ans.second + 1;
                 return answer;
@@ -726,7 +733,7 @@ private:
             if (index2 >= 0 && index2 <= 1048572 && index2 % 4 == 0)
             {
                 //int time = mem.post(index2 / 4, registers.get(inst.dest));
-                Mem_instructions.push_back(make_pair<Instruction, int>(inst, index2 / 1024));
+                Mem_instructions.push_back(make_pair(inst, index2 / 1024));
                 cout << "\tsw : \tDRAM request issued \n";
                 //answer.second = time + 1;
                 return answer;
