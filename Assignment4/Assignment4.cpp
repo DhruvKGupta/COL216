@@ -277,12 +277,14 @@ public:
                             
                             while(it2 != it){
                                 if(((*it2).first.instr == InstructionType::lw)&&((*it2).first.dest == (*it).first.dest)){
-                                    toexecute=false;
                                     break;
                                 }
+                                it2++;
                             }
-                            if(!toexecute)
+                            if(it2==it){
+                                toexecute=false;
                                 done_mem = execute_mem_instruction(it);
+                            }
                                 
                             break;
                         }
@@ -1389,7 +1391,7 @@ int main(int argc, char *argv[])
         return 0;
     }
     int mode = /*(argc > 1) ? stoi(argv[1]) :*/ 2;
-    string fileName = /*(argc > 4) ? argv[4] :*/ "testcase10.txt";
+    string fileName = /*(argc > 4) ? argv[4] :*/ "d:\\IITD\\COL216\\Assignment1\\Assignment4\\testcase10.txt";
 
     Simulator sim;
     if (mode == 1)
