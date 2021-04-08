@@ -15,9 +15,7 @@ main:
 	sw $t4, 4($s1)	#store 4 at location 2504	
 	lw $t6, 0($s1)  #2500
 	lw $t4, 4($s0)	#1004
-	sw $t0, 1024($zero)  #unsafe as we previously have lw $t0
-	lw $t0, 1024($zero)
-	sw $t0, 1024($zero) 
+	sw $t0, 1024($zero) #wait as $t0 is not safe
 	lw $t8, 4($s1)	#2504
 
 

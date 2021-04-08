@@ -504,7 +504,7 @@ private:
         {
             cout << "Buffer is Empty. Required row from memory is copied to buffer\n";
             if (ROW_ACCESS_DELAY > 1)
-                cout << "\tcycle " << (clock) << "-" << (clock + ROW_ACCESS_DELAY-1) << " : \tDRAM :\tActivate required row to buffer\n";
+                cout << "\tcycle " << (clock) << "-" << (clock + ROW_ACCESS_DELAY-1) << " : \tDRAM :\tActivate required row("+to_string(mem.get_current_row())+") to buffer\n";
             else
                 cout << "\tcycle " << (clock) << " : \tDRAM :\tActivate required row to buffer\n";
 
@@ -519,12 +519,12 @@ private:
             if (ROW_ACCESS_DELAY > 1)
             {
                 cout << "\tcycle " << (clock) << "-" << (clock + ROW_ACCESS_DELAY-1) << " : \tDRAM :\tCopy the buffer back\n";
-                cout << "\tcycle " << (clock + ROW_ACCESS_DELAY) << "-" << (clock + 2 * ROW_ACCESS_DELAY-1) << " : \tDRAM :\tActivate required row to buffer\n";
+                cout << "\tcycle " << (clock + ROW_ACCESS_DELAY) << "-" << (clock + 2 * ROW_ACCESS_DELAY-1) << " : \tDRAM :\tActivate required row("+to_string(mem.get_current_row())+") to buffer\n";
             }
             else
             {
                 cout << "\tcycle " << (clock) << " : \tDRAM :\tCopy the buffer back\n";
-                cout << "\tcycle " << (clock + ROW_ACCESS_DELAY) << " : \tDRAM :\tActivate required row to buffer\n";
+                cout << "\tcycle " << (clock + ROW_ACCESS_DELAY) << " : \tDRAM :\tActivate required row("+to_string(mem.get_current_row())+") to buffer\n";
             }
             if (COL_ACCESS_DELAY > 1)
                 cout << "\tcycle " << (clock + 2 * ROW_ACCESS_DELAY ) << "-" << (clock + done.second-1) << " : \tDRAM :\tAccess column\n";
@@ -1377,7 +1377,7 @@ int main(int argc, char *argv[])
         return 0;
     }
     int mode = /*(argc > 1) ? stoi(argv[1]) :*/ 2;
-    string fileName = /*(argc > 4) ? argv[4] :*/ "d:\\IITD\\COL216\\Assignment1\\Assignment4\\testcase10.txt";
+    string fileName = /*(argc > 4) ? argv[4] :*/ "testcase10.txt";
 
     Simulator sim;
     if (mode == 1)
