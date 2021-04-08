@@ -267,17 +267,28 @@ public:
                 }
                 else
                 {
+                    bool toexecute = true;
                     list<pair<Instruction, int>>::iterator it = Mem_instructions.begin();
                     while (it != Mem_instructions.end())
                     {
                         if (((*it).second) == mem.get_current_row())
                         {
-                            done_mem = execute_mem_instruction(it);
+                            list<pair<Instruction, int>>::iterator it2 = Mem_instructions.begin();
+                            
+                            while(it2 != it){
+                                if(((*it2).first.instr == InstructionType::lw)&&((*it2).first.dest == (*it).first.dest)){
+                                    toexecute=false;
+                                    break;
+                                }
+                            }
+                            if(!toexecute)
+                                done_mem = execute_mem_instruction(it);
+                                
                             break;
                         }
                         it++;
                     }
-                    if(it == Mem_instructions.end())
+                    if(toexecute)
                         done_mem = execute_mem_instruction(Mem_instructions.begin());
                 }
                 
@@ -366,19 +377,20 @@ private:
     {
         if (ins.instr == InstructionType::sw || ins.instr == InstructionType::lw)
         {
-            list<pair<Instruction, int>>::iterator it = Mem_instructions.begin();
-            while (it != Mem_instructions.end())
-            {
-                if ((*it).first.instr == InstructionType::lw)
-                {
-                    int orig_register = (*it).first.dest;
-                    if (ins.dest == orig_register)
-                    {
-                        return false;
-                    }
-                }
-                it++;
-            }
+            return true;
+            // list<pair<Instruction, int>>::iterator it = Mem_instructions.begin();
+            // while (it != Mem_instructions.end())
+            // {
+            //     if ((*it).first.instr == InstructionType::lw)
+            //     {
+            //         int orig_register = (*it).first.dest;
+            //         if (ins.dest == orig_register)
+            //         {
+            //             return false;
+            //         }
+            //     }
+            //     it++;
+            // }
         }
         else
         {
