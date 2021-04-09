@@ -320,6 +320,8 @@ public:
 
             //registers.print(hex);
         }
+        cout<<"Final register states \n";
+        registers.print(false);
         printstatistics();
         // for (auto x : num_times)
         // {
@@ -1391,7 +1393,7 @@ int main(int argc, char *argv[])
         return 0;
     }
     int mode = /*(argc > 1) ? stoi(argv[1]) :*/ 2;
-    string fileName = /*(argc > 4) ? argv[4] :*/ "d:\\IITD\\COL216\\Assignment1\\Assignment4\\testcase10.txt";
+    string fileName = /*(argc > 4) ? argv[4] :*/ "testcase10.txt";
 
     Simulator sim;
     if (mode == 1)
