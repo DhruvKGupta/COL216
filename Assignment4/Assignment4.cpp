@@ -298,8 +298,6 @@ public:
             }
             else
                 wait_for_DRAM();
-
-
         }
         printstatistics();
     }
@@ -459,7 +457,7 @@ private:
         cout << "\tNumber of Buffer updates is " << mem.getbuffer() << "\n\n";
         cout << "Final register states : \n\n";
         registers.print(hex);
-        cout<<"\n";
+        cout << "\n";
         if (!mem_modified.empty())
         {
             sort(mem_modified.begin(), mem_modified.end());
@@ -1413,7 +1411,7 @@ int main(int argc, char *argv[])
         cout << "Invalid DRAM access delay(s)\n";
         return 0;
     }
-    string fileName = (argc > 3) ? argv[3] : "demo.txt";
+    string fileName = (argc > 3) ? argv[3] : "code.txt";
 
     Simulator sim;
     if (sim.loadinstructions(fileName))
