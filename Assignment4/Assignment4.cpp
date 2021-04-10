@@ -29,7 +29,7 @@ struct Instruction
     int imvalue;
     string jumplabel;
 };
-
+//Structure used to pass instrution in queue 
 struct Mem_instr
 {
     Instruction inst;
@@ -298,6 +298,8 @@ public:
             }
             else
                 wait_for_DRAM();
+
+
         }
         printstatistics();
     }
@@ -336,6 +338,7 @@ private:
     // RUNNING MEMORY INSTRUCTIONS FROM LIST IF MEMORY IS IDLE
     void Run_Memory()
     {
+        //Firstly check for any memory instruction in queue which can be executed
         if (clock > mem.get_process_end() && !(Mem_instructions.empty()))
         {
             pair<bool, int> done_mem;
@@ -457,7 +460,7 @@ private:
         cout << "\tNumber of Buffer updates is " << mem.getbuffer() << "\n\n";
         cout << "Final register states : \n\n";
         registers.print(hex);
-        cout << "\n";
+        cout<<"\n";
         if (!mem_modified.empty())
         {
             sort(mem_modified.begin(), mem_modified.end());
@@ -556,7 +559,7 @@ private:
                 cout << "\tcycle " << (clock + 2 * ROW_ACCESS_DELAY) << " : \tDRAM :\tAccess column\n";
         }
     }
-
+    //Same execution for instructions other than lw and sw
     pair<bool, int> execute(Instruction inst)
     {
         pc++;
@@ -1411,7 +1414,7 @@ int main(int argc, char *argv[])
         cout << "Invalid DRAM access delay(s)\n";
         return 0;
     }
-    string fileName = (argc > 3) ? argv[3] : "code.txt";
+    string fileName = (argc > 3) ? argv[3] : "demo.txt";
 
     Simulator sim;
     if (sim.loadinstructions(fileName))
