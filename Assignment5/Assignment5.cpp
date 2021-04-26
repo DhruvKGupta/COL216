@@ -30,13 +30,14 @@ struct Instruction
     int imvalue;
     string jumplabel;
 };
-//Structure used to pass instrution in queue 
+//Structure used to pass instrution in queue
 struct Mem_instr
 {
     Instruction inst;
     int row;
     int inst_num;
     int num_to_write;
+    int core_id;
 };
 
 class RegisterFile
@@ -210,57 +211,59 @@ private:
 class Simulator
 {
 public:
-    bool loadinstructions(string fileName)
+    bool loadinstructions(string *fileNames)
     {
-        clear();
-        string line;
-        ifstream file(fileName);
-        if (file.is_open())
+        for (int k = 0; k < NUM_CORES; k++)
         {
-            int i = 1;
-            while (getline(file, line))
+            string line;
+            ifstream file(fileNames[k]);
+            if (file.is_open())
             {
-                Removespace(line);
-                int comment = line.find('#');
-                if (comment != string::npos)
-                    line = line.substr(0, comment);
-                if (line.empty())
+                int i = 1;
+                while (getline(file, line))
                 {
-                    i++;
-                    continue;
-                }
-                else
-                {
-                    bool cont = parse(line); // This line is without comment and without spaces.
-                    if (!cont)
+                    Removespace(line);
+                    int comment = line.find('#');
+                    if (comment != string::npos)
+                        line = line.substr(0, comment);
+                    if (line.empty())
                     {
-                        cout << i << endl;
-                        file.close();
+                        i++;
+                        continue;
+                    }
+                    else
+                    {
+                        bool cont = parse(line, k); // This line is without comment and without spaces.
+                        if (!cont)
+                        {
+                            cout << i << endl;
+                            file.close();
+                            return false;
+                        }
+                        i++;
+                    }
+                }
+                file.close();
+            }
+            else
+            {
+                cout << "File does not exist\nPlease enter correct file name\n";
+                return false;
+            }
+            for (int i = 0; i < instructions[k].size(); i++)
+            {
+                Instruction instruction = instructions[k][i];
+                if (instruction.instr >= 4 && instruction.instr <= 6)
+                {
+                    if (instruction.dest == -1 && labels[k].find(instruction.jumplabel) != labels[k].end())
+                    {
+                        instructions[k][i].dest = labels[k][instruction.jumplabel];
+                    }
+                    if (instructions[k][i].dest < 0 || instructions[k][i].dest - 32 > instructions[k].size())
+                    {
+                        cout << " Illegal jump at instruction " << i + 1 << "\n";
                         return false;
                     }
-                    i++;
-                }
-            }
-            file.close();
-        }
-        else
-        {
-            cout << "File does not exist\nPlease enter correct file name\n";
-            return false;
-        }
-        for (int i = 0; i < instructions.size(); i++)
-        {
-            Instruction instruction = instructions[i];
-            if (instruction.instr >= 4 && instruction.instr <= 6)
-            {
-                if (instruction.dest == -1 && labels.find(instruction.jumplabel) != labels.end())
-                {
-                    instructions[i].dest = labels[instruction.jumplabel];
-                }
-                if (instructions[i].dest < 0 || instructions[i].dest - 32 > instructions.size())
-                {
-                    cout << " Illegal jump at instruction " << i + 1 << "\n";
-                    return false;
                 }
             }
         }
@@ -269,53 +272,32 @@ public:
     // COMPLETELY MODIFIED FROM MINOR
     void run()
     {
-        pc = 0;
         clock = 0;
         cout << "Every Cycle description :\n\n";
-        while (pc < instructions.size() || !(Mem_instructions.empty()))
+        bool remaining = checkremaining();
+        while (remaining)
         {
             ++clock;
 
             Run_Memory();
             // CPU FETCHES INSTRUCTION AND RUNS IT IF INDEPENDENT
-            if (pc < instructions.size())
-            {
-                Instruction ins = instructions[pc];
-                bool independent = is_independent(ins);
-                if (independent)
-                {
-                    cout << "\tcycle " << clock << " : ";
-                    pair<bool, int> done = execute(ins);
-                    if (!done.first)
-                    {
-                        cout << pc << "\n";
-                        return;
-                    }
-                    if (mem.get_process_end() == clock)
-                        Mem_instructions.erase(current_mem);
-                }
-                else
-                    wait_for_DRAM();
-            }
-            else
-                wait_for_DRAM();
-
-
+            for (int id = 0; id < NUM_CORES; id++)
+                Run_CPU(id);
         }
         printstatistics();
-        delete [] FileArray;
     }
 
     void clear()
     {
-        instructions.clear();
-        labels.clear();
+        registers = new RegisterFile[NUM_CORES];
+        instructions = new vector<Instruction>[NUM_CORES];
+        labels = new unordered_map<string, int>[NUM_CORES];
         mem.clear();
-        registers.clear();
-        pc = 0;
+        pc = new int[NUM_CORES];
+        pc = {0};
         clock = 0;
         hex = false;
-        mem_modified.clear();
+        mem_modified = new vector<int>[NUM_CORES];
         Mem_instructions.clear();
     }
     Simulator()
@@ -325,18 +307,63 @@ public:
 
 private:
     Memory mem;
-    RegisterFile registers;
-    RegisterFile* FileArray = new RegisterFile[NUM_CORES];
-    int pc = 0;
+    //RegisterFile registers;
+    RegisterFile *registers;
+    int *pc;
+    //int pc = 0;
     int clock = 0;
-    vector<Instruction> instructions;
-    unordered_map<string, int> labels;
-    unordered_map<int, int> num_times;
+    //vector<Instruction> instructions;
+    vector<Instruction> *instructions;
+    //unordered_map<string, int> labels;
+    unordered_map<string, int> *labels;
+    //unordered_map<int, int> num_times;
     bool hex = false;
-    vector<int> mem_modified;
+    //vector<int> mem_modified;
+    vector<int> *mem_modified;
     // LIST OF MEMORY INSTRUCTIONS
     list<Mem_instr> Mem_instructions;
     list<Mem_instr>::iterator current_mem;
+
+    bool checkremaining()
+    {
+        bool remaining = false;
+        remaining = remaining || (!Mem_instructions.empty());
+        for (int i = 0; i < NUM_CORES; i++)
+        {
+            if (remaining)
+                return remaining;
+            else
+            {
+                remaining = remaining || (pc[i] < instructions[i].size());
+            }
+        }
+        return remaining;
+    }
+
+    void Run_CPU(int core_id)
+    {
+        if (pc[core_id] < instructions[core_id].size())
+        {
+            Instruction ins = instructions[core_id][pc[core_id]];
+            bool independent = is_independent(ins);
+            if (independent)
+            {
+                cout << "\tcycle " << clock << " : ";
+                pair<bool, int> done = execute(ins, core_id);
+                if (!done.first)
+                {
+                    cout << pc << "\n";
+                    return;
+                }
+                if (mem.get_process_end() == clock)
+                    Mem_instructions.erase(current_mem);
+            }
+            else
+                wait_for_DRAM();
+        }
+        else
+            wait_for_DRAM();
+    }
 
     // RUNNING MEMORY INSTRUCTIONS FROM LIST IF MEMORY IS IDLE
     void Run_Memory()
@@ -426,25 +453,26 @@ private:
     {
         Instruction inst = (*iter).inst;
         int address = (*iter).inst_num;
+        int core_id = (*iter).core_id;
         current_mem = iter;
         pair<bool, int> answer = make_pair(true, 1);
         int index1, index2;
         if (inst.instr == InstructionType::lw)
         {
-            index1 = inst.imvalue + registers.get(inst.src1);
+            index1 = inst.imvalue + registers[core_id].get(inst.src1);
             pair<int, int> ans = mem.get(index1 / 4);
-            registers.post(inst.dest, ans.first);
+            registers[core_id].post(inst.dest, ans.first);
             answer.second = ans.second;
-            printcycledata(answer, inst, address);
+            printcycledata(answer, inst, address, core_id);
             mem.set_process_end(clock + answer.second - 1);
             return answer;
         }
         else if (inst.instr == InstructionType::sw)
         {
-            index2 = inst.imvalue + registers.get(inst.src1);
+            index2 = inst.imvalue + registers[core_id].get(inst.src1);
             int time = mem.post(index2 / 4, (*iter).num_to_write);
             answer.second = time;
-            printcycledata(answer, inst, address);
+            printcycledata(answer, inst, address, core_id);
             mem.set_process_end(clock + answer.second - 1);
             return answer;
         }
@@ -462,42 +490,48 @@ private:
         cout << "\tNumber of clock cycles is " << clock << "\n";
         cout << "\tNumber of Buffer updates is " << mem.getbuffer() << "\n\n";
         cout << "Final register states : \n\n";
-        registers.print(hex);
-        cout<<"\n";
-        if (!mem_modified.empty())
+        for (int i = 0; i < NUM_CORES; i++)
         {
-            sort(mem_modified.begin(), mem_modified.end());
-            vector<int>::iterator mem_m;
-            mem_m = unique(mem_modified.begin(), mem_modified.end());
-            mem_modified.resize(distance(mem_modified.begin(), mem_m));
-            cout << "Memory content at the end :\n\n";
-            for (int i = 0; i < mem_modified.size(); i++)
+            cout << "Core " << i << " : \n";
+            registers[i].print(hex);
+
+            cout << "\n";
+            if (!mem_modified[i].empty())
             {
-                cout << "\t" << mem_modified[i] << "-" << mem_modified[i] + 3 << " : " << mem.get_without_buffer(mem_modified[i] / 4) << "\n";
+                sort(mem_modified[i].begin(), mem_modified[i].end());
+                vector<int>::iterator mem_m;
+                mem_m = unique(mem_modified[i].begin(), mem_modified[i].end());
+                mem_modified[i].resize(distance(mem_modified[i].begin(), mem_m));
+                cout << "Memory content at the end :\n\n";
+                for (int j = 0; j < mem_modified[i].size(); j++)
+                {
+                    cout << "\t" << mem_modified[i][j] << "-" << mem_modified[i][j] + 3 << " : " << mem.get_without_buffer(mem_modified[i][j] / 4) << "\n";
+                }
             }
-        }
-        else
-        {
-            cout << "No Memory accesses \n";
+            else
+            {
+                cout << "No Memory accesses \n";
+            }
+            cout << "\n";
         }
     }
     // PRINT CYCLE DATA FOR MEMORY INSTRUCTIONS WHEN THEY ARE EXECUTED BY MEMORY -- TAKEN FROM MINOR
-    void printcycledata(pair<bool, int> done, Instruction ins, int address)
+    void printcycledata(pair<bool, int> done, Instruction ins, int address, int core_id)
     {
         if (done.second > 1)
         {
             cout << "\tcycle " << (clock) << "-" << (clock + done.second - 1) << " : ";
             if (ins.instr == InstructionType::lw)
             {
-                cout << "\tDRAM :\t" << registers.getname(ins.dest) << " = " << registers.get(ins.dest) << " ; ";
-                mem_modified.push_back(ins.imvalue + registers.get(ins.src1));
+                cout << "\tDRAM :\t" << registers[core_id].getname(ins.dest) << " = " << registers[core_id].get(ins.dest) << " ; ";
+                mem_modified[core_id].push_back(ins.imvalue + registers[core_id].get(ins.src1));
             }
             else
             {
-                int index2 = ins.imvalue + registers.get(ins.src1);
+                int index2 = ins.imvalue + registers[core_id].get(ins.src1);
                 cout << "\tDRAM :\tmemory address " << index2 << "-" << index2 + 3 << " = " << mem.get_without_buffer(index2 / 4) << " ; ";
 
-                mem_modified.push_back(index2);
+                mem_modified[core_id].push_back(index2);
             }
         }
         else if (done.second == 1)
@@ -505,14 +539,14 @@ private:
             cout << "\tcycle " << (clock) << " : ";
             if (ins.instr == InstructionType::lw)
             {
-                cout << "\tDRAM :\t" << registers.getname(ins.dest) << " = " << registers.get(ins.dest) << " ; ";
-                mem_modified.push_back(ins.imvalue + registers.get(ins.src1));
+                cout << "\tDRAM :\t" << registers[core_id].getname(ins.dest) << " = " << registers[core_id].get(ins.dest) << " ; ";
+                mem_modified[core_id].push_back(ins.imvalue + registers[core_id].get(ins.src1));
             }
             else
             {
-                int index2 = ins.imvalue + registers.get(ins.src1);
+                int index2 = ins.imvalue + registers[core_id].get(ins.src1);
                 cout << "\tDRAM :\tmemory address " << index2 << "-" << index2 + 3 << " = " << mem.get_without_buffer(index2 / 4) << " ; ";
-                mem_modified.push_back(index2);
+                mem_modified[core_id].push_back(index2);
             }
         }
         if (done.second == COL_ACCESS_DELAY)
@@ -563,9 +597,9 @@ private:
         }
     }
     //Same execution for instructions other than lw and sw
-    pair<bool, int> execute(Instruction inst)
+    pair<bool, int> execute(Instruction inst, int core_id)
     {
-        pc++;
+        pc[core_id]++;
         pair<bool, int> answer = make_pair(true, 1);
         int index1, index2;
         switch (inst.instr)
@@ -579,14 +613,14 @@ private:
             }
             if (inst.src2 == -1)
             {
-                registers.post(inst.dest, registers.get(inst.src1) + inst.imvalue);
-                cout << "\tadd :\t" << registers.getname(inst.dest) << " = " << registers.get(inst.dest) << " ; Instruction address : " << pc << "\n";
+                registers[core_id].post(inst.dest, registers[core_id].get(inst.src1) + inst.imvalue);
+                cout << "\tadd :\t" << registers[core_id].getname(inst.dest) << " = " << registers[core_id].get(inst.dest) << " ; Instruction address : " << pc[core_id] << "\n";
                 return answer;
             }
             else
             {
-                registers.post(inst.dest, registers.get(inst.src1) + registers.get(inst.src2));
-                cout << "\tadd :\t" << registers.getname(inst.dest) << " = " << registers.get(inst.dest) << " ; Instruction address : " << pc << "\n";
+                registers[core_id].post(inst.dest, registers[core_id].get(inst.src1) + registers[core_id].get(inst.src2));
+                cout << "\tadd :\t" << registers[core_id].getname(inst.dest) << " = " << registers[core_id].get(inst.dest) << " ; Instruction address : " << pc[core_id] << "\n";
                 return answer;
             }
             break;
@@ -599,14 +633,14 @@ private:
             }
             if (inst.src2 == -1)
             {
-                registers.post(inst.dest, registers.get(inst.src1) - inst.imvalue);
-                cout << "\tsub :\t" << registers.getname(inst.dest) << " = " << registers.get(inst.dest) << " ; Instruction address : " << pc << "\n";
+                registers[core_id].post(inst.dest, registers[core_id].get(inst.src1) - inst.imvalue);
+                cout << "\tsub :\t" << registers[core_id].getname(inst.dest) << " = " << registers[core_id].get(inst.dest) << " ; Instruction address : " << pc[core_id] << "\n";
                 return answer;
             }
             else
             {
-                registers.post(inst.dest, registers.get(inst.src1) - registers.get(inst.src2));
-                cout << "\tsub :\t" << registers.getname(inst.dest) << " = " << registers.get(inst.dest) << " ; Instruction address : " << pc << "\n";
+                registers[core_id].post(inst.dest, registers[core_id].get(inst.src1) - registers[core_id].get(inst.src2));
+                cout << "\tsub :\t" << registers[core_id].getname(inst.dest) << " = " << registers[core_id].get(inst.dest) << " ; Instruction address : " << pc[core_id] << "\n";
                 return answer;
             }
             break;
@@ -619,14 +653,14 @@ private:
             }
             if (inst.src2 == -1)
             {
-                registers.post(inst.dest, registers.get(inst.src1) * inst.imvalue);
-                cout << "\tmul :\t" << registers.getname(inst.dest) << " = " << registers.get(inst.dest) << " ; Instruction address : " << pc << "\n";
+                registers[core_id].post(inst.dest, registers[core_id].get(inst.src1) * inst.imvalue);
+                cout << "\tmul :\t" << registers[core_id].getname(inst.dest) << " = " << registers[core_id].get(inst.dest) << " ; Instruction address : " << pc[core_id] << "\n";
                 return answer;
             }
             else
             {
-                registers.post(inst.dest, registers.get(inst.src1) * registers.get(inst.src2));
-                cout << "\tmul :\t" << registers.getname(inst.dest) << " = " << registers.get(inst.dest) << " ; Instruction address : " << pc << "\n";
+                registers[core_id].post(inst.dest, registers[core_id].get(inst.src1) * registers[core_id].get(inst.src2));
+                cout << "\tmul :\t" << registers[core_id].getname(inst.dest) << " = " << registers[core_id].get(inst.dest) << " ; Instruction address : " << pc[core_id] << "\n";
                 return answer;
             }
             break;
@@ -639,31 +673,31 @@ private:
             }
             if (inst.src2 == -1)
             {
-                if (registers.get(inst.src1) < inst.imvalue)
+                if (registers[core_id].get(inst.src1) < inst.imvalue)
                 {
-                    registers.post(inst.dest, 1);
-                    cout << "\tslt :\t" << registers.getname(inst.dest) << " = " << registers.get(inst.dest) << " ; Instruction address : " << pc << "\n";
+                    registers[core_id].post(inst.dest, 1);
+                    cout << "\tslt :\t" << registers[core_id].getname(inst.dest) << " = " << registers[core_id].get(inst.dest) << " ; Instruction address : " << pc[core_id] << "\n";
                     return answer;
                 }
                 else
                 {
-                    registers.post(inst.dest, 0);
-                    cout << "\tslt :\t" << registers.getname(inst.dest) << " = " << registers.get(inst.dest) << " ; Instruction address : " << pc << "\n";
+                    registers[core_id].post(inst.dest, 0);
+                    cout << "\tslt :\t" << registers[core_id].getname(inst.dest) << " = " << registers[core_id].get(inst.dest) << " ; Instruction address : " << pc[core_id] << "\n";
                     return answer;
                 }
             }
             else
             {
-                if (registers.get(inst.src1) < registers.get(inst.src2))
+                if (registers[core_id].get(inst.src1) < registers[core_id].get(inst.src2))
                 {
-                    registers.post(inst.dest, 1);
-                    cout << "\tslt :\t" << registers.getname(inst.dest) << " = " << registers.get(inst.dest) << " ; Instruction address : " << pc << "\n";
+                    registers[core_id].post(inst.dest, 1);
+                    cout << "\tslt :\t" << registers[core_id].getname(inst.dest) << " = " << registers[core_id].get(inst.dest) << " ; Instruction address : " << pc[core_id] << "\n";
                     return answer;
                 }
                 else
                 {
-                    registers.post(inst.dest, 0);
-                    cout << "\tslt :\t" << registers.getname(inst.dest) << " = " << registers.get(inst.dest) << " ; Instruction address : " << pc << "\n";
+                    registers[core_id].post(inst.dest, 0);
+                    cout << "\tslt :\t" << registers[core_id].getname(inst.dest) << " = " << registers[core_id].get(inst.dest) << " ; Instruction address : " << pc[core_id] << "\n";
                     return answer;
                 }
             }
@@ -671,33 +705,33 @@ private:
         case InstructionType::beq:
             if (inst.src2 == -1)
             {
-                if (registers.get(inst.src1) == inst.imvalue)
+                if (registers[core_id].get(inst.src1) == inst.imvalue)
                 {
                     cout << "\tbeq :\tJumped"
-                         << " ; Instruction address : " << pc << "\n";
-                    pc = inst.dest - 32;
+                         << " ; Instruction address : " << pc[core_id] << "\n";
+                    pc[core_id] = inst.dest - 32;
                     return answer;
                 }
                 else
                 {
                     cout << "\tbeq : \tNot Jumped"
-                         << " ; Instruction address : " << pc << "\n";
+                         << " ; Instruction address : " << pc[core_id] << "\n";
                     return answer;
                 }
             }
             else
             {
-                if (registers.get(inst.src1) == registers.get(inst.src2))
+                if (registers[core_id].get(inst.src1) == registers[core_id].get(inst.src2))
                 {
                     cout << "\tbeq :\tJumped"
-                         << " ; Instruction address : " << pc << "\n";
-                    pc = inst.dest - 32;
+                         << " ; Instruction address : " << pc[core_id] << "\n";
+                    pc[core_id] = inst.dest - 32;
                     return answer;
                 }
                 else
                 {
                     cout << "\tbeq :\tNot Jumped"
-                         << " ; Instruction address : " << pc << "\n";
+                         << " ; Instruction address : " << pc[core_id] << "\n";
                     return answer;
                 }
             }
@@ -706,41 +740,41 @@ private:
         case InstructionType::bne:
             if (inst.src2 == -1)
             {
-                if (registers.get(inst.src1) != inst.imvalue)
+                if (registers[core_id].get(inst.src1) != inst.imvalue)
                 {
                     cout << "\tbne :\tJumped"
-                         << " ; Instruction address : " << pc << "\n";
-                    pc = inst.dest - 32;
+                         << " ; Instruction address : " << pc[core_id] << "\n";
+                    pc[core_id] = inst.dest - 32;
                     return answer;
                 }
                 else
                 {
                     cout << "\tbne :\tNot Jumped"
-                         << " ; Instruction address : " << pc << "\n";
+                         << " ; Instruction address : " << pc[core_id] << "\n";
                     return answer;
                 }
             }
             else
             {
-                if (registers.get(inst.src1) != registers.get(inst.src2))
+                if (registers[core_id].get(inst.src1) != registers[core_id].get(inst.src2))
                 {
                     cout << "\tbne :\tJumped"
-                         << " ; Instruction address : " << pc << "\n";
-                    pc = labels[inst.jumplabel] - 32;
+                         << " ; Instruction address : " << pc[core_id] << "\n";
+                    pc[core_id] = labels[core_id][inst.jumplabel] - 32;
                     return answer;
                 }
                 else
                 {
                     cout << "\tbne :\tNot Jumped"
-                         << " ; Instruction address : " << pc << "\n";
+                         << " ; Instruction address : " << pc[core_id] << "\n";
                     return answer;
                 }
             }
             break;
         case InstructionType::j:
             cout << "\tj :\tJumped"
-                 << " ; Instruction address : " << pc << "\n";
-            pc = inst.dest - 32;
+                 << " ; Instruction address : " << pc[core_id] << "\n";
+            pc[core_id] = inst.dest - 32;
             return answer;
             break;
         case InstructionType::lw:
@@ -750,14 +784,14 @@ private:
                 answer.first = false;
                 return answer;
             }
-            index1 = inst.imvalue + registers.get(inst.src1);
+            index1 = inst.imvalue + registers[core_id].get(inst.src1);
             if (index1 >= 0 && index1 <= 1048572 && index1 % 4 == 0)
             {
                 //pair<int, int> ans = mem.get(index1 / 4);
-                //registers.post(inst.dest, ans.first);
-                Mem_instructions.push_back({inst, index1 / 1024, pc, -1});
+                //registers[core_id].post(inst.dest, ans.first);
+                Mem_instructions.push_back({inst, index1 / 1024, pc[core_id], -1, core_id});
                 cout << "\tlw :\tDRAM request issued"
-                     << " ; Instruction address : " << pc << " \n";
+                     << " ; Instruction address : " << pc[core_id] << " \n";
                 //answer.second = ans.second + 1;
                 return answer;
             }
@@ -769,13 +803,13 @@ private:
             }
             break;
         case InstructionType::sw:
-            index2 = inst.imvalue + registers.get(inst.src1);
+            index2 = inst.imvalue + registers[core_id].get(inst.src1);
             if (index2 >= 0 && index2 <= 1048572 && index2 % 4 == 0)
             {
-                //int time = mem.post(index2 / 4, registers.get(inst.dest));
-                Mem_instructions.push_back({inst, index2 / 1024, pc, registers.get(inst.dest)});
+                //int time = mem.post(index2 / 4, registers[core_id].get(inst.dest));
+                Mem_instructions.push_back({inst, index2 / 1024, pc[core_id], registers[core_id].get(inst.dest), core_id});
                 cout << "\tsw : \tDRAM request issued"
-                     << " ; Instruction address : " << pc << " \n";
+                     << " ; Instruction address : " << pc[core_id] << " \n";
                 //answer.second = time + 1;
                 return answer;
             }
@@ -793,8 +827,8 @@ private:
                 answer.first = false;
                 return answer;
             }
-            registers.post(inst.dest, registers.get(inst.src1) + inst.imvalue);
-            cout << "\taddi :\t" << registers.getname(inst.dest) << " = " << registers.get(inst.dest) << " ; Instruction address : " << pc << "\n";
+            registers[core_id].post(inst.dest, registers[core_id].get(inst.src1) + inst.imvalue);
+            cout << "\taddi :\t" << registers[core_id].getname(inst.dest) << " = " << registers[core_id].get(inst.dest) << " ; Instruction address : " << pc[core_id] << "\n";
             return answer;
             break;
 
@@ -955,7 +989,7 @@ private:
         return true;
     }
 
-    bool parse(string line)
+    bool parse(string line, int core_id)
     {
         // Parse the string into instruction....
         int l = line.find(':');
@@ -973,9 +1007,9 @@ private:
             }
             string label = line.substr(0, j + 1);
             // Could check validity of label
-            if (labels.find(label) != labels.end())
+            if (labels[core_id].find(label) != labels[core_id].end())
             {
-                if (labels[label] != -1)
+                if (labels[core_id][label] != -1)
                 {
                     cout << "Syntax Error : Same label defined again at line  ";
                     return false;
@@ -986,7 +1020,7 @@ private:
                 cout << "invalid label name at line ";
                 return false;
             }
-            labels[label] = instructions.size() + 32; //variable rakh lena chahiye mere khayal se size ke liye
+            labels[core_id][label] = instructions[core_id].size() + 32; //variable rakh lena chahiye mere khayal se size ke liye
             int len = (line.length()) - 1;
             if (l == len)
             {
@@ -1086,7 +1120,7 @@ private:
                 //instr.src1 = reg2;
                 //instr.src2 = reg3;
                 //instr.imvalue=reg.at(0);
-                //instructions.push_back(instr);
+                //instructions[core_id].push_back(instr);
                 //return true;
                 //}
                 if (checkNum(reg))
@@ -1097,7 +1131,7 @@ private:
                     instr.src1 = reg2;
                     instr.src2 = -1;
                     instr.imvalue = stoi(reg);
-                    instructions.push_back(instr);
+                    instructions[core_id].push_back(instr);
                     return true;
                 }
                 cout << " Syntax Error at line ";
@@ -1115,7 +1149,7 @@ private:
             instr.dest = reg1;
             instr.src1 = reg2;
             instr.src2 = reg3;
-            instructions.push_back(instr);
+            instructions[core_id].push_back(instr);
             return true;
         }
         else if (oper < 6) // for beq, bne
@@ -1177,13 +1211,13 @@ private:
             }
             else
             {
-                if (labels.find(operands) == labels.end())
-                    labels[operands] = -1;
-                jump = labels[operands];
+                if (labels[core_id].find(operands) == labels[core_id].end())
+                    labels[core_id][operands] = -1;
+                jump = labels[core_id][operands];
                 inst.dest = jump;
                 inst.jumplabel = operands;
             }
-            instructions.push_back(inst);
+            instructions[core_id].push_back(inst);
             return true;
         }
         else if (oper < 7) // for j
@@ -1212,13 +1246,13 @@ private:
             }
             else
             {
-                if (labels.find(operands) == labels.end())
-                    labels[operands] = -1;
-                jump = labels[operands];
+                if (labels[core_id].find(operands) == labels[core_id].end())
+                    labels[core_id][operands] = -1;
+                jump = labels[core_id][operands];
                 inst.dest = jump;
                 inst.jumplabel = operands;
             }
-            instructions.push_back(inst);
+            instructions[core_id].push_back(inst);
             return true;
         }
         else if (oper < 9) //for lw, sw
@@ -1260,7 +1294,7 @@ private:
                     instr.dest = reg1;
                     instr.src1 = 0;
                     instr.src2 = -1;
-                    instructions.push_back(instr);
+                    instructions[core_id].push_back(instr);
                     return true;
                     ;
                 }
@@ -1322,7 +1356,7 @@ private:
             instr.dest = reg1;
             instr.src1 = reg2;
             instr.src2 = -1;
-            instructions.push_back(instr);
+            instructions[core_id].push_back(instr);
             return true;
         }
         else
@@ -1382,7 +1416,7 @@ private:
                 instr.src1 = reg2;
                 instr.src2 = -1;
                 instr.imvalue = stoi(reg);
-                instructions.push_back(instr);
+                instructions[core_id].push_back(instr);
                 return true;
             }
             else
@@ -1402,7 +1436,7 @@ private:
             instr.dest = reg1;
             instr.src1 = reg2;
             instr.src2 = -1;
-            instructions.push_back(instr);
+            instructions[core_id].push_back(instr);
             return true;
         }
     }
@@ -1418,10 +1452,14 @@ int main(int argc, char *argv[])
         cout << "Invalid DRAM access delay(s)\n";
         return 0;
     }
-    string fileName = (argc > 4) ? argv[4] : "demo.txt";
+    string fileNames[NUM_CORES];
+    for (int i = 0; i < NUM_CORES; i++)
+    {
+        fileNames[i] = (argc > 4 + i) ? argv[4 + i] : "demo" + to_string(i + 1) + ".txt";
+    }
 
     Simulator sim;
-    if (sim.loadinstructions(fileName))
+    if (sim.loadinstructions(fileNames))
     {
         sim.run();
     }
