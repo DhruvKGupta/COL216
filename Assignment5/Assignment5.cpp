@@ -4,6 +4,7 @@ using namespace std;
 
 int ROW_ACCESS_DELAY;
 int COL_ACCESS_DELAY;
+int CORES_LIMIT = 10;
 int NUM_CORES;
 
 enum InstructionType
@@ -289,15 +290,17 @@ public:
 
     void clear()
     {
-        registers = new RegisterFile[NUM_CORES];
-        instructions = new vector<Instruction>[NUM_CORES];
-        labels = new unordered_map<string, int>[NUM_CORES];
+        RegisterFile registers[CORES_LIMIT];
+        vector<Instruction> instructions [CORES_LIMIT];
+        unordered_map<string, int> labels [CORES_LIMIT];
         mem.clear();
-        pc = new int[NUM_CORES];
-        pc = {0};
+        int pc [CORES_LIMIT];
+        //pc = {0};
+        for(int i=0;i<CORES_LIMIT;i++)
+        	pc[i]=0;
         clock = 0;
         hex = false;
-        mem_modified = new vector<int>[NUM_CORES];
+        vector<int> mem_modified [CORES_LIMIT];
         Mem_instructions.clear();
     }
     Simulator()
@@ -311,13 +314,13 @@ private:
     RegisterFile *registers;
     int *pc;
     //int pc = 0;
-    int clock = 0;
+    int clock ;
     //vector<Instruction> instructions;
     vector<Instruction> *instructions;
     //unordered_map<string, int> labels;
     unordered_map<string, int> *labels;
     //unordered_map<int, int> num_times;
-    bool hex = false;
+    bool hex ;
     //vector<int> mem_modified;
     vector<int> *mem_modified;
     // LIST OF MEMORY INSTRUCTIONS
