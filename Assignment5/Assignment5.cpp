@@ -5,6 +5,7 @@ using namespace std;
 int ROW_ACCESS_DELAY;
 int COL_ACCESS_DELAY;
 const int CORES_LIMIT = 10;
+int MANAGER_SIZE = 100;
 int NUM_CORES;
 
 enum InstructionType
@@ -345,7 +346,7 @@ private:
         if (pc[core_id] < instructions[core_id].size())
         {
             Instruction ins = instructions[core_id][pc[core_id]];
-            bool independent = is_independent(ins);
+            bool independent = is_independent(ins, core_id);
             if (independent)
             {
                 pair<bool, int> done = execute(ins, core_id);
@@ -443,18 +444,21 @@ private:
         }
     }
     // TO CHECK DEPENDENCY OF INSTRUCTION -- TAKEN FROM MINOR
-    bool is_independent(Instruction ins)
+    bool is_independent(Instruction ins, int core_id)
     {
         if (ins.instr == InstructionType::sw || ins.instr == InstructionType::lw)
         {
-            return true;
+            if (Mem_instructions.size() < MANAGER_SIZE)
+                return true;
+            else
+                return false;
         }
         else
         {
             list<Mem_instr>::iterator it = Mem_instructions.begin();
             while (it != Mem_instructions.end())
             {
-                if ((*it).inst.instr == InstructionType::lw)
+                if ((*it).core_id == core_id && (*it).inst.instr == InstructionType::lw)
                 {
                     int orig_register = (*it).inst.dest;
                     if (ins.dest == orig_register || ins.src1 == orig_register || ins.src2 == orig_register)
