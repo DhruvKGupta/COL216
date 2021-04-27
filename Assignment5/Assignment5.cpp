@@ -275,16 +275,15 @@ public:
     {
         clock = 0;
         cout << "Every Cycle description :\n\n";
-        bool remaining = checkremaining();
-        while (remaining)
+        while (checkremaining())
         {
             ++clock;
 
             Run_Memory();
-            bool freed=false;
+            //bool freed=false;
             // CPU FETCHES INSTRUCTION AND RUNS IT IF INDEPENDENT
             for (int id = 0; id < NUM_CORES; id++)
-                freed=Run_CPU(id,freed);
+                Run_CPU(id);
         }
         printstatistics();
     }
@@ -296,6 +295,7 @@ public:
         {
             pc[i] = 0;
         }
+        hex = false;
         clock = 0;
         Mem_instructions.clear();
     }
@@ -339,42 +339,35 @@ private:
         return remaining;
     }
 
-    bool Run_CPU(int core_id,bool freed)
+    void Run_CPU(int core_id)
     {
+        cout << "\tcycle " << clock << " : \tCore " << core_id << " : ";
         if (pc[core_id] < instructions[core_id].size())
         {
             Instruction ins = instructions[core_id][pc[core_id]];
             bool independent = is_independent(ins);
             if (independent)
             {
-                cout << "\tcycle " << clock << " : ";
                 pair<bool, int> done = execute(ins, core_id);
                 if (!done.first)
                 {
                     cout << pc << "\n";
-                    return freed;
                 }
-                if (mem.get_process_end() == clock && !freed){
+                if (mem.get_process_end() == clock)
+                {
                     Mem_instructions.erase(current_mem);
-                    freed=true;;
-                    }
+                    mem.set_process_end(-1);
+                }
             }
             else
-            	{
-            	if (!freed){
-                wait_for_DRAM();
-                freed=true;
-                }
-                }
+            {
+                wait_for_Processes();
+            }
         }
         else
-            {
-            	if (!freed){
-                wait_for_DRAM();
-                freed=true;
-                }
-                }
-        return freed;
+        {
+            Idle_message();
+        }
     }
 
     // RUNNING MEMORY INSTRUCTIONS FROM LIST IF MEMORY IS IDLE
@@ -400,7 +393,7 @@ private:
 
                         while (it2 != it)
                         {
-                            if (((*it2).inst.instr == InstructionType::lw) && ((*it2).inst.dest == (*it).inst.dest))
+                            if ((*it2).core_id == (*it).core_id && ((*it2).inst.instr == InstructionType::lw) && ((*it2).inst.dest == (*it).inst.dest))
                             {
                                 break;
                             }
@@ -422,18 +415,32 @@ private:
         }
     }
     // CPU WAITS FOR DRAM IF NEXT INSTRUCTION CANNOT BE EXECUTED WITHOUT DRAM COMPLETION
-    void wait_for_DRAM()
+    void wait_for_Processes()
     {
-        if ((mem.get_process_end() - clock) > 0)
+        //if ((mem.get_process_end() - clock) > 0)
+        //{
+        //    cout << "\tcycle " << (clock) << "-" << mem.get_process_end() << " : Waiting for DRAM to return\n";
+        //}
+        //else if (mem.get_process_end() == clock)
+        //{
+        cout << " : Waiting for Other processes \n";
+        //}
+        //clock = mem.get_process_end();
+        if (clock == mem.get_process_end())
         {
-            cout << "\tcycle " << (clock) << "-" << mem.get_process_end() << " : Waiting for DRAM to return\n";
+            Mem_instructions.erase(current_mem);
+            mem.set_process_end(-1);
         }
-        else if (mem.get_process_end() == clock)
+    }
+
+    void Idle_message()
+    {
+        cout << " : Idle \n";
+        if (clock == mem.get_process_end())
         {
-            cout << "\tcycle " << (clock) << " : Waiting for DRAM to return\n";
+            Mem_instructions.erase(current_mem);
+            mem.set_process_end(-1);
         }
-        clock = mem.get_process_end();
-        Mem_instructions.erase(current_mem);
     }
     // TO CHECK DEPENDENCY OF INSTRUCTION -- TAKEN FROM MINOR
     bool is_independent(Instruction ins)
@@ -472,7 +479,7 @@ private:
         if (inst.instr == InstructionType::lw)
         {
             index1 = inst.imvalue + registers[core_id].get(inst.src1);
-            pair<int, int> ans = mem.get(index1 / 4);
+            pair<int, int> ans = mem.get((index1 + core_id * (1048576 / NUM_CORES)) / 4);
             registers[core_id].post(inst.dest, ans.first);
             answer.second = ans.second;
             printcycledata(answer, inst, address, core_id);
@@ -482,7 +489,7 @@ private:
         else if (inst.instr == InstructionType::sw)
         {
             index2 = inst.imvalue + registers[core_id].get(inst.src1);
-            int time = mem.post(index2 / 4, (*iter).num_to_write);
+            int time = mem.post((index2 + core_id * (1048576 / NUM_CORES)) / 4, (*iter).num_to_write);
             answer.second = time;
             printcycledata(answer, inst, address, core_id);
             mem.set_process_end(clock + answer.second - 1);
@@ -517,7 +524,7 @@ private:
                 cout << "Memory content at the end :\n\n";
                 for (int j = 0; j < mem_modified[i].size(); j++)
                 {
-                    cout << "\t" << mem_modified[i][j] << "-" << mem_modified[i][j] + 3 << " : " << mem.get_without_buffer(mem_modified[i][j] / 4) << "\n";
+                    cout << "\t" << mem_modified[i][j] << "-" << mem_modified[i][j] + 3 << " : " << mem.get_without_buffer((mem_modified[i][j] + i * (1048576 / NUM_CORES)) / 4) << "\n";
                 }
             }
             else
@@ -541,7 +548,7 @@ private:
             else
             {
                 int index2 = ins.imvalue + registers[core_id].get(ins.src1);
-                cout << "\tDRAM :\tmemory address " << index2 << "-" << index2 + 3 << " = " << mem.get_without_buffer(index2 / 4) << " ; ";
+                cout << "\tDRAM :\tmemory address " << index2 << "-" << index2 + 3 << " = " << mem.get_without_buffer((index2 + core_id * (1048576 / NUM_CORES)) / 4) << " ; ";
 
                 mem_modified[core_id].push_back(index2);
             }
@@ -557,7 +564,7 @@ private:
             else
             {
                 int index2 = ins.imvalue + registers[core_id].get(ins.src1);
-                cout << "\tDRAM :\tmemory address " << index2 << "-" << index2 + 3 << " = " << mem.get_without_buffer(index2 / 4) << " ; ";
+                cout << "\tDRAM :\tmemory address " << index2 << "-" << index2 + 3 << " = " << mem.get_without_buffer((index2 + core_id * (1048576 / NUM_CORES)) / 4) << " ; ";
                 mem_modified[core_id].push_back(index2);
             }
         }
@@ -797,11 +804,11 @@ private:
                 return answer;
             }
             index1 = inst.imvalue + registers[core_id].get(inst.src1);
-            if (index1 >= 0 && index1 <= 1048572 && index1 % 4 == 0)
+            if (index1 >= 0 && index1 < (1048576 / NUM_CORES) && index1 % 4 == 0)
             {
                 //pair<int, int> ans = mem.get(index1 / 4);
                 //registers[core_id].post(inst.dest, ans.first);
-                Mem_instructions.push_back({inst, index1 / 1024, pc[core_id], -1, core_id});
+                Mem_instructions.push_back({inst, (index1 + (core_id) * (1048576 / NUM_CORES)) / 1024, pc[core_id], -1, core_id});
                 cout << "\tlw :\tDRAM request issued"
                      << " ; Instruction address : " << pc[core_id] << " \n";
                 //answer.second = ans.second + 1;
@@ -816,10 +823,10 @@ private:
             break;
         case InstructionType::sw:
             index2 = inst.imvalue + registers[core_id].get(inst.src1);
-            if (index2 >= 0 && index2 <= 1048572 && index2 % 4 == 0)
+            if (index2 >= 0 && index2 < 1048576 / NUM_CORES && index2 % 4 == 0)
             {
                 //int time = mem.post(index2 / 4, registers[core_id].get(inst.dest));
-                Mem_instructions.push_back({inst, index2 / 1024, pc[core_id], registers[core_id].get(inst.dest), core_id});
+                Mem_instructions.push_back({inst, (index2 + (core_id) * (1048576 / NUM_CORES)) / 1024, pc[core_id], registers[core_id].get(inst.dest), core_id});
                 cout << "\tsw : \tDRAM request issued"
                      << " ; Instruction address : " << pc[core_id] << " \n";
                 //answer.second = time + 1;
