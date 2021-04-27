@@ -4,7 +4,7 @@ using namespace std;
 
 int ROW_ACCESS_DELAY;
 int COL_ACCESS_DELAY;
-int CORES_LIMIT = 10;
+const int CORES_LIMIT = 10;
 int NUM_CORES;
 
 enum InstructionType
@@ -290,17 +290,12 @@ public:
 
     void clear()
     {
-        RegisterFile registers[CORES_LIMIT];
-        vector<Instruction> instructions [CORES_LIMIT];
-        unordered_map<string, int> labels [CORES_LIMIT];
         mem.clear();
-        int pc [CORES_LIMIT];
-        //pc = {0};
-        for(int i=0;i<CORES_LIMIT;i++)
-        	pc[i]=0;
+        for (int i = 0; i < NUM_CORES; i++)
+        {
+            pc[i] = 0;
+        }
         clock = 0;
-        hex = false;
-        vector<int> mem_modified [CORES_LIMIT];
         Mem_instructions.clear();
     }
     Simulator()
@@ -311,18 +306,18 @@ public:
 private:
     Memory mem;
     //RegisterFile registers;
-    RegisterFile *registers;
-    int *pc;
+    RegisterFile registers[CORES_LIMIT];
+    int pc[CORES_LIMIT];
     //int pc = 0;
-    int clock ;
+    int clock;
     //vector<Instruction> instructions;
-    vector<Instruction> *instructions;
+    vector<Instruction> instructions[CORES_LIMIT];
     //unordered_map<string, int> labels;
-    unordered_map<string, int> *labels;
+    unordered_map<string, int> labels[CORES_LIMIT];
     //unordered_map<int, int> num_times;
-    bool hex ;
+    bool hex;
     //vector<int> mem_modified;
-    vector<int> *mem_modified;
+    vector<int> mem_modified[CORES_LIMIT];
     // LIST OF MEMORY INSTRUCTIONS
     list<Mem_instr> Mem_instructions;
     list<Mem_instr>::iterator current_mem;
@@ -1453,6 +1448,11 @@ int main(int argc, char *argv[])
     if (ROW_ACCESS_DELAY <= 0 || COL_ACCESS_DELAY <= 0)
     {
         cout << "Invalid DRAM access delay(s)\n";
+        return 0;
+    }
+    if (NUM_CORES > CORES_LIMIT)
+    {
+        cout << "Too many cores\n";
         return 0;
     }
     string fileNames[NUM_CORES];
