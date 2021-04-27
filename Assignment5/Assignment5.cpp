@@ -5,7 +5,7 @@ using namespace std;
 int ROW_ACCESS_DELAY;
 int COL_ACCESS_DELAY;
 const int CORES_LIMIT = 10;
-int MANAGER_SIZE = 100;
+int MANAGER_SIZE = 128;
 int NUM_CORES;
 
 enum InstructionType
@@ -37,6 +37,7 @@ struct Mem_instr
 {
     Instruction inst;
     int row;
+    int address;
     int inst_num;
     int num_to_write;
     int core_id;
@@ -475,27 +476,25 @@ private:
     pair<bool, int> execute_mem_instruction(list<Mem_instr>::iterator iter)
     {
         Instruction inst = (*iter).inst;
-        int address = (*iter).inst_num;
+        int inst_num = (*iter).inst_num;
+        int address = (*iter).address;
         int core_id = (*iter).core_id;
         current_mem = iter;
         pair<bool, int> answer = make_pair(true, 1);
-        int index1, index2;
         if (inst.instr == InstructionType::lw)
         {
-            index1 = inst.imvalue + registers[core_id].get(inst.src1);
-            pair<int, int> ans = mem.get((index1 + core_id * (1048576 / NUM_CORES)) / 4);
+            pair<int, int> ans = mem.get(address / 4);
             registers[core_id].post(inst.dest, ans.first);
             answer.second = ans.second;
-            printcycledata(answer, inst, address, core_id);
+            printcycledata(answer, inst, inst_num, core_id);
             mem.set_process_end(clock + answer.second - 1);
             return answer;
         }
         else if (inst.instr == InstructionType::sw)
         {
-            index2 = inst.imvalue + registers[core_id].get(inst.src1);
-            int time = mem.post((index2 + core_id * (1048576 / NUM_CORES)) / 4, (*iter).num_to_write);
+            int time = mem.post(address / 4, (*iter).num_to_write);
             answer.second = time;
-            printcycledata(answer, inst, address, core_id);
+            printcycledata(answer, inst, inst_num, core_id);
             mem.set_process_end(clock + answer.second - 1);
             return answer;
         }
@@ -812,7 +811,7 @@ private:
             {
                 //pair<int, int> ans = mem.get(index1 / 4);
                 //registers[core_id].post(inst.dest, ans.first);
-                Mem_instructions.push_back({inst, (index1 + (core_id) * (1048576 / NUM_CORES)) / 1024, pc[core_id], -1, core_id});
+                Mem_instructions.push_back({inst, (index1 + (core_id) * (1048576 / NUM_CORES)) / 1024,index1 + (core_id) * (1048576 / NUM_CORES), pc[core_id], -1, core_id});
                 cout << "\tlw :\tDRAM request issued"
                      << " ; Instruction address : " << pc[core_id] << " \n";
                 //answer.second = ans.second + 1;
@@ -830,7 +829,7 @@ private:
             if (index2 >= 0 && index2 < 1048576 / NUM_CORES && index2 % 4 == 0)
             {
                 //int time = mem.post(index2 / 4, registers[core_id].get(inst.dest));
-                Mem_instructions.push_back({inst, (index2 + (core_id) * (1048576 / NUM_CORES)) / 1024, pc[core_id], registers[core_id].get(inst.dest), core_id});
+                Mem_instructions.push_back({inst, (index2 + (core_id) * (1048576 / NUM_CORES)) / 1024,index2 + (core_id) * (1048576 / NUM_CORES), pc[core_id], registers[core_id].get(inst.dest), core_id});
                 cout << "\tsw : \tDRAM request issued"
                      << " ; Instruction address : " << pc[core_id] << " \n";
                 //answer.second = time + 1;
