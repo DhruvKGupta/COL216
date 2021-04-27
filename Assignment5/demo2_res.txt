@@ -1,0 +1,142 @@
+Every Cycle description :
+
+	cycle 1 : 	addi :	$s0 = 1000 ; Instruction address : 1
+	cycle 2 : 	addi :	$s1 = 2500 ; Instruction address : 2
+	cycle 3 : 	addi :	$t0 = 1 ; Instruction address : 3
+	cycle 4 : 	addi :	$t1 = 2 ; Instruction address : 4
+	cycle 5 : 	addi :	$t2 = 3 ; Instruction address : 5
+	cycle 6 : 	addi :	$t3 = 4 ; Instruction address : 6
+	cycle 7 : 	addi :	$s3 = 0 ; Instruction address : 7
+	cycle 8 : 	addi :	$s4 = 20 ; Instruction address : 8
+	cycle 9 : 	sw : 	DRAM request issued ; Instruction address : 9 
+	cycle 10-21 : 	DRAM :	memory address 1000-1003 = 1 ; Buffer is Empty. Required row from memory is copied to buffer ; Instruction address : 9
+	cycle 10-19 : 	DRAM :	Activate required row(0) to buffer
+	cycle 20-21 : 	DRAM :	Access column
+	cycle 10 : 	lw :	DRAM request issued ; Instruction address : 10 
+	cycle 11 : 	lw :	DRAM request issued ; Instruction address : 11 
+	cycle 12 : 	sw : 	DRAM request issued ; Instruction address : 12 
+	cycle 13 : 	addi :	$s3 = 1 ; Instruction address : 13
+	cycle 14 : 	bne :	Jumped ; Instruction address : 14
+	cycle 15 : 	addi :	$s3 = 2 ; Instruction address : 13
+	cycle 16 : 	bne :	Jumped ; Instruction address : 14
+	cycle 17 : 	addi :	$s3 = 3 ; Instruction address : 13
+	cycle 18 : 	bne :	Jumped ; Instruction address : 14
+	cycle 19 : 	addi :	$s3 = 4 ; Instruction address : 13
+	cycle 20 : 	bne :	Jumped ; Instruction address : 14
+	cycle 21 : 	addi :	$s3 = 5 ; Instruction address : 13
+	cycle 22-43 : 	DRAM :	$t0 = 0 ; Buffer is copied back and required row is copied to buffer ; Instruction address : 10
+	cycle 22-31 : 	DRAM :	Copy the buffer back
+	cycle 32-41 : 	DRAM :	Activate required row(2) to buffer
+	cycle 42-43 : 	DRAM :	Access column
+	cycle 22 : 	bne :	Jumped ; Instruction address : 14
+	cycle 23 : 	addi :	$s3 = 6 ; Instruction address : 13
+	cycle 24 : 	bne :	Jumped ; Instruction address : 14
+	cycle 25 : 	addi :	$s3 = 7 ; Instruction address : 13
+	cycle 26 : 	bne :	Jumped ; Instruction address : 14
+	cycle 27 : 	addi :	$s3 = 8 ; Instruction address : 13
+	cycle 28 : 	bne :	Jumped ; Instruction address : 14
+	cycle 29 : 	addi :	$s3 = 9 ; Instruction address : 13
+	cycle 30 : 	bne :	Jumped ; Instruction address : 14
+	cycle 31 : 	addi :	$s3 = 10 ; Instruction address : 13
+	cycle 32 : 	bne :	Jumped ; Instruction address : 14
+	cycle 33 : 	addi :	$s3 = 11 ; Instruction address : 13
+	cycle 34 : 	bne :	Jumped ; Instruction address : 14
+	cycle 35 : 	addi :	$s3 = 12 ; Instruction address : 13
+	cycle 36 : 	bne :	Jumped ; Instruction address : 14
+	cycle 37 : 	addi :	$s3 = 13 ; Instruction address : 13
+	cycle 38 : 	bne :	Jumped ; Instruction address : 14
+	cycle 39 : 	addi :	$s3 = 14 ; Instruction address : 13
+	cycle 40 : 	bne :	Jumped ; Instruction address : 14
+	cycle 41 : 	addi :	$s3 = 15 ; Instruction address : 13
+	cycle 42 : 	bne :	Jumped ; Instruction address : 14
+	cycle 43 : 	addi :	$s3 = 16 ; Instruction address : 13
+	cycle 44-65 : 	DRAM :	$t0 = 1 ; Buffer is copied back and required row is copied to buffer ; Instruction address : 11
+	cycle 44-53 : 	DRAM :	Copy the buffer back
+	cycle 54-63 : 	DRAM :	Activate required row(0) to buffer
+	cycle 64-65 : 	DRAM :	Access column
+	cycle 44 : 	bne :	Jumped ; Instruction address : 14
+	cycle 45 : 	addi :	$s3 = 17 ; Instruction address : 13
+	cycle 46 : 	bne :	Jumped ; Instruction address : 14
+	cycle 47 : 	addi :	$s3 = 18 ; Instruction address : 13
+	cycle 48 : 	bne :	Jumped ; Instruction address : 14
+	cycle 49 : 	addi :	$s3 = 19 ; Instruction address : 13
+	cycle 50 : 	bne :	Jumped ; Instruction address : 14
+	cycle 51 : 	addi :	$s3 = 20 ; Instruction address : 13
+	cycle 52 : 	bne :	Not Jumped ; Instruction address : 14
+	cycle 53 : 	sw : 	DRAM request issued ; Instruction address : 15 
+	cycle 54-65 : Waiting for DRAM to return
+	cycle 66-87 : 	DRAM :	memory address 2500-2503 = 1 ; Buffer is copied back and required row is copied to buffer ; Instruction address : 12
+	cycle 66-75 : 	DRAM :	Copy the buffer back
+	cycle 76-85 : 	DRAM :	Activate required row(2) to buffer
+	cycle 86-87 : 	DRAM :	Access column
+	cycle 66 : 	add :	$t0 = 3 ; Instruction address : 16
+	cycle 67 : 	sw : 	DRAM request issued ; Instruction address : 17 
+	cycle 68 : 	lw :	DRAM request issued ; Instruction address : 18 
+	cycle 69 : 	addi :	$s3 = 0 ; Instruction address : 19
+	cycle 70 : 	addi :	$t2 = 4 ; Instruction address : 20
+	cycle 71 : 	bne :	Jumped ; Instruction address : 21
+	cycle 72 : 	addi :	$t2 = 5 ; Instruction address : 20
+	cycle 73 : 	bne :	Jumped ; Instruction address : 21
+	cycle 74 : 	addi :	$t2 = 6 ; Instruction address : 20
+	cycle 75 : 	bne :	Jumped ; Instruction address : 21
+	cycle 76 : 	addi :	$t2 = 7 ; Instruction address : 20
+	cycle 77 : 	bne :	Jumped ; Instruction address : 21
+	cycle 78 : 	addi :	$t2 = 8 ; Instruction address : 20
+	cycle 79 : 	bne :	Jumped ; Instruction address : 21
+	cycle 80 : 	addi :	$t2 = 9 ; Instruction address : 20
+	cycle 81 : 	bne :	Jumped ; Instruction address : 21
+	cycle 82 : 	addi :	$t2 = 10 ; Instruction address : 20
+	cycle 83 : 	bne :	Jumped ; Instruction address : 21
+	cycle 84 : 	addi :	$t2 = 11 ; Instruction address : 20
+	cycle 85 : 	bne :	Jumped ; Instruction address : 21
+	cycle 86 : 	addi :	$t2 = 12 ; Instruction address : 20
+	cycle 87 : 	bne :	Jumped ; Instruction address : 21
+	cycle 88-89 : 	DRAM :	memory address 2504-2507 = 0 ; Buffer contains the required row ; Instruction address : 15
+	cycle 88-89 : 	DRAM :	Access column
+	cycle 88 : 	addi :	$t2 = 13 ; Instruction address : 20
+	cycle 89 : 	bne :	Jumped ; Instruction address : 21
+	cycle 90-111 : 	DRAM :	memory address 1004-1007 = 3 ; Buffer is copied back and required row is copied to buffer ; Instruction address : 17
+	cycle 90-99 : 	DRAM :	Copy the buffer back
+	cycle 100-109 : 	DRAM :	Activate required row(0) to buffer
+	cycle 110-111 : 	DRAM :	Access column
+	cycle 90 : 	addi :	$t2 = 14 ; Instruction address : 20
+	cycle 91 : 	bne :	Jumped ; Instruction address : 21
+	cycle 92 : 	addi :	$t2 = 15 ; Instruction address : 20
+	cycle 93 : 	bne :	Jumped ; Instruction address : 21
+	cycle 94 : 	addi :	$t2 = 16 ; Instruction address : 20
+	cycle 95 : 	bne :	Jumped ; Instruction address : 21
+	cycle 96 : 	addi :	$t2 = 17 ; Instruction address : 20
+	cycle 97 : 	bne :	Jumped ; Instruction address : 21
+	cycle 98 : 	addi :	$t2 = 18 ; Instruction address : 20
+	cycle 99 : 	bne :	Jumped ; Instruction address : 21
+	cycle 100 : 	addi :	$t2 = 19 ; Instruction address : 20
+	cycle 101 : 	bne :	Jumped ; Instruction address : 21
+	cycle 102 : 	addi :	$t2 = 20 ; Instruction address : 20
+	cycle 103 : 	bne :	Not Jumped ; Instruction address : 21
+	cycle 104 : 	lw :	DRAM request issued ; Instruction address : 22 
+	cycle 105-111 : Waiting for DRAM to return
+	cycle 112-113 : 	DRAM :	$t5 = 1 ; Buffer contains the required row ; Instruction address : 18
+	cycle 112-113 : 	DRAM :	Access column
+	cycle 112-113 : Waiting for DRAM to return
+	cycle 114-115 : 	DRAM :	$t7 = 3 ; Buffer contains the required row ; Instruction address : 22
+	cycle 114-115 : 	DRAM :	Access column
+	cycle 114-115 : Waiting for DRAM to return
+
+Statistics :
+
+	Number of clock cycles is 115
+	Number of Buffer updates is 9
+
+Final register states : 
+
+	$zero : 0 | $at : 0 | $v0 : 0 | $v1 : 0 | $a0 : 0 | $a1 : 0 | $a2 : 0 | $a3 : 0 | 
+	$t0 : 3 | $t1 : 2 | $t2 : 20 | $t3 : 4 | $t4 : 0 | $t5 : 1 | $t6 : 0 | $t7 : 3 | 
+	$s0 : 1000 | $s1 : 2500 | $s2 : 0 | $s3 : 0 | $s4 : 20 | $s5 : 0 | $s6 : 0 | $s7 : 0 | 
+	$t8 : 0 | $t9 : 0 | $k0 : 0 | $k1 : 0 | $gp : 0 | $sp : 1048572 | $s8 : 0 | $ra : 0 | 
+	
+Memory content at the end :
+
+	1000-1003 : 1
+	1004-1007 : 3
+	2500-2503 : 1
+	2504-2507 : 0
