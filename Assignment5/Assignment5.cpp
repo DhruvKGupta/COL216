@@ -281,9 +281,10 @@ public:
             ++clock;
 
             Run_Memory();
+            bool freed=false;
             // CPU FETCHES INSTRUCTION AND RUNS IT IF INDEPENDENT
             for (int id = 0; id < NUM_CORES; id++)
-                Run_CPU(id);
+                freed=Run_CPU(id,freed);
         }
         printstatistics();
     }
@@ -338,7 +339,7 @@ private:
         return remaining;
     }
 
-    void Run_CPU(int core_id)
+    bool Run_CPU(int core_id,bool freed)
     {
         if (pc[core_id] < instructions[core_id].size())
         {
@@ -351,16 +352,29 @@ private:
                 if (!done.first)
                 {
                     cout << pc << "\n";
-                    return;
+                    return freed;
                 }
-                if (mem.get_process_end() == clock)
+                if (mem.get_process_end() == clock && !freed){
                     Mem_instructions.erase(current_mem);
+                    freed=true;;
+                    }
             }
             else
+            	{
+            	if (!freed){
                 wait_for_DRAM();
+                freed=true;
+                }
+                }
         }
         else
-            wait_for_DRAM();
+            {
+            	if (!freed){
+                wait_for_DRAM();
+                freed=true;
+                }
+                }
+        return freed;
     }
 
     // RUNNING MEMORY INSTRUCTIONS FROM LIST IF MEMORY IS IDLE
