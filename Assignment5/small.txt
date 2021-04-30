@@ -2,7 +2,7 @@ main:
 	addi $s0, $zero, 1000
 	addi $s1, $zero, 2500
 	addi $t0, $zero, 1
-	addi $s4, $zero, 2
+	addi $s4, $zero, 20
 
 	sw $t0, 0($s0)	#store 1 at location 1000
 	j:	addi $s3,$s3,1

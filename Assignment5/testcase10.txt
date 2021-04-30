@@ -6,7 +6,7 @@ main:
 	addi $t2, $zero, 3
 	addi $t3, $zero, 4
 	addi $s3, $zero, 0
-	addi $s4, $zero, 20
+	addi $s4, $zero, 30
 
 	sw $t0, 0($s0)	#store 1 at location 1000
 	lw $t0, 0($s1)  #2500
