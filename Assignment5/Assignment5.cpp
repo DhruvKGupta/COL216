@@ -5,6 +5,7 @@ using namespace std;
 int ROW_ACCESS_DELAY;
 int COL_ACCESS_DELAY;
 const int CORES_LIMIT = 10;
+const int STARVATION = 10;
 int MANAGER_SIZE = 128;
 int NUM_CORES;
 
@@ -41,6 +42,7 @@ struct Mem_instr
     int inst_num;
     int num_to_write;
     int core_id;
+    int count;
 };
 
 class RegisterFile
@@ -340,6 +342,16 @@ private:
         }
         return remaining;
     }
+    
+    void clearCount()
+    {
+        list<Mem_instr>::iterator it1 = Mem_instructions.begin();
+        while (it1 != Mem_instructions.end())
+        {
+            (*it1).count = 0;
+            it1++;
+        }
+    }
 
     void Run_CPU(int core_id)
     {
@@ -399,10 +411,17 @@ private:
                             {
                                 break;
                             }
+                            it2->count++;
                             it2++;
                         }
                         if (it2 == it)
                         {
+                            if (Mem_instructions.begin()->count >= STARVATION)
+                            {
+                                clearCount();
+                                done_mem = execute_mem_instruction(Mem_instructions.begin());
+                                return;
+                            }
                             toexecute = false;
                             done_mem = execute_mem_instruction(it);
                         }
@@ -412,7 +431,10 @@ private:
                     it++;
                 }
                 if (toexecute)
+                {
+                    clearCount();
                     done_mem = execute_mem_instruction(Mem_instructions.begin());
+                }
             }
         }
     }
@@ -475,6 +497,39 @@ private:
         }
         return true;
     }
+    
+    /*void setUsed(Instruction ins,int coreId){
+    	list<Mem_instr>::iterator it = Mem_instructions.begin();
+        while (it != Mem_instructions.end())
+        {
+            if ((*it).core_id == coreId&&ins.instr!=InstructionType::sw)
+            {
+                if ((*it).inst.instr == InstructionType::sw && it->inst.dest==ins.dest && it!=current_mem)
+                {
+                    it->used=true;
+                }
+            }
+            it++;
+        }
+    }*/
+    
+    void checkForwarding(int addr,int core_id){
+    	list<Mem_instr>::iterator it = Mem_instructions.end();
+        while (it != Mem_instructions.begin())
+        {
+            it--;
+            if ((*it).inst.instr == InstructionType::lw && (*it).core_id == core_id && it->address==addr)
+            {
+             return;
+            }
+            if ((*it).inst.instr == InstructionType::sw && (*it).core_id == core_id && it->address==addr&& it!=current_mem)
+            {
+                it=Mem_instructions.erase(it);
+                continue;
+            }
+        }
+    }
+    
     // EXECUTE MEM INSTRUCTION
     pair<bool, int> execute_mem_instruction(list<Mem_instr>::iterator iter)
     {
@@ -621,12 +676,14 @@ private:
                 cout << "\tcycle " << (clock + 2 * ROW_ACCESS_DELAY) << " : \tDRAM :\tAccess column\n";
         }
     }
+     
     //Same execution for instructions other than lw and sw
     pair<bool, int> execute(Instruction inst, int core_id)
     {
         pc[core_id]++;
         pair<bool, int> answer = make_pair(true, 1);
         int index1, index2;
+        //setUsed(inst,core_id);
         switch (inst.instr)
         {
         case InstructionType::add:
@@ -814,7 +871,7 @@ private:
             {
                 //pair<int, int> ans = mem.get(index1 / 4);
                 //registers[core_id].post(inst.dest, ans.first);
-                Mem_instructions.push_back({inst, (index1 + (core_id) * (1048576 / NUM_CORES)) / 1024,index1 + (core_id) * (1048576 / NUM_CORES), pc[core_id], -1, core_id});
+                Mem_instructions.push_back({inst, (index1 + (core_id) * (1048576 / NUM_CORES)) / 1024,index1 + (core_id) * (1048576 / NUM_CORES), pc[core_id], -1, core_id,0});
                 cout << "\tlw :\tDRAM request issued"
                      << " ; Instruction address : " << pc[core_id] << " \n";
                 //answer.second = ans.second + 1;
@@ -832,7 +889,8 @@ private:
             if (index2 >= 0 && index2 < 1048576 / NUM_CORES && index2 % 4 == 0)
             {
                 //int time = mem.post(index2 / 4, registers[core_id].get(inst.dest));
-                Mem_instructions.push_back({inst, (index2 + (core_id) * (1048576 / NUM_CORES)) / 1024,index2 + (core_id) * (1048576 / NUM_CORES), pc[core_id], registers[core_id].get(inst.dest), core_id});
+                checkForwarding(index2 + (core_id) * (1048576 / NUM_CORES),core_id);
+                Mem_instructions.push_back({inst, (index2 + (core_id) * (1048576 / NUM_CORES)) / 1024,index2 + (core_id) * (1048576 / NUM_CORES), pc[core_id], registers[core_id].get(inst.dest), core_id,0});
                 cout << "\tsw : \tDRAM request issued"
                      << " ; Instruction address : " << pc[core_id] << " \n";
                 //answer.second = time + 1;
