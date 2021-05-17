@@ -4,7 +4,7 @@ using namespace std;
 
 int ROW_ACCESS_DELAY;
 int COL_ACCESS_DELAY;
-const int CORES_LIMIT = 10;
+const int CORES_LIMIT = 16;
 const int STARVATION = 10;
 int MANAGER_SIZE = 128;
 int NUM_CORES;
