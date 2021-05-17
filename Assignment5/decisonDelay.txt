@@ -1,0 +1,11 @@
+addi $t0, $zero, 6
+sw $t0, 1000($zero)
+sw $t0, 1000($zero)
+jmp:
+	addi $t7,$t7,1
+	bne $t7,$t0,jmp
+sw $t1, 1000($zero)
+lw $t1, 1000($zero)
+sw $t0, 1000($zero)
+sw $t3, 1000($zero)
+sw $t7, 1000($zero)
