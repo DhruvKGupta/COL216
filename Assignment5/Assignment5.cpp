@@ -1574,10 +1574,7 @@ private:
 
 int main(int argc, char *argv[])
 {
-    ROW_ACCESS_DELAY = (argc > 1) ? stoi(argv[1]) : 10;
-    COL_ACCESS_DELAY = (argc > 2) ? stoi(argv[2]) : 2;
-    NUM_CORES = (argc > 3) ? stoi(argv[3]) : 1;
-    M = (argc > 4) ? stoi(argv[4]) : INT_MAX;
+    NUM_CORES = (argc > 1) ? stoi(argv[1]) : 1;
     if (ROW_ACCESS_DELAY <= 0 || COL_ACCESS_DELAY <= 0)
     {
         cout << "Invalid DRAM access delay(s)\n";
@@ -1591,8 +1588,11 @@ int main(int argc, char *argv[])
     string fileNames[NUM_CORES];
     for (int i = 0; i < NUM_CORES; i++)
     {
-        fileNames[i] = (argc > 5 + i) ? argv[5 + i] : "demo" + to_string(i + 1) + ".txt";
+        fileNames[i] = (argc > 2 + i) ? argv[2 + i] : "demo" + to_string(i + 1) + ".txt";
     }
+    M = (argc > NUM_CORES+2) ? stoi(argv[NUM_CORES+2]) : INT_MAX;
+    ROW_ACCESS_DELAY = (argc > NUM_CORES+3) ? stoi(argv[NUM_CORES+3]) : 10;
+    COL_ACCESS_DELAY = (argc > NUM_CORES+4) ? stoi(argv[NUM_CORES+4]) : 2;
 
     Simulator sim;
     if (sim.loadinstructions(fileNames))
