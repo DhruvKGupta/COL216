@@ -299,6 +299,7 @@ public:
         for (int i = 0; i < NUM_CORES; i++)
         {
             pc[i] = 0;
+            num_instructions[i]=0;
         }
         hex = false;
         clock = 0;
@@ -328,7 +329,7 @@ private:
     list<Mem_instr> Mem_instructions;
     list<Mem_instr>::iterator current_mem;
     int clock_lastmem = 0;
-    list<Mem_instr>::iterator chosen_mem = NULL;
+    list<Mem_instr>::iterator chosen_mem = Mem_instructions.end();
     int num_instructions[CORES_LIMIT];
 
     bool checkremaining()
@@ -367,8 +368,9 @@ private:
             if (independent)
             {
                 pair<bool, int> done = execute(ins, core_id);
-                if(ins.instr!=7 && ins.instr!=8){
-                    num_instructions[core_id]+=1;
+                if (ins.instr != 7 && ins.instr != 8)
+                {
+                    num_instructions[core_id] += 1;
                 }
                 if (!done.first)
                 {
@@ -376,7 +378,7 @@ private:
                 }
                 if (mem.get_process_end() == clock)
                 {
-                    num_instructions[(*current_mem).core_id] +=1;
+                    num_instructions[(*current_mem).core_id] += 1;
                     Mem_instructions.erase(current_mem);
                     mem.set_process_end(-1);
                 }
@@ -399,10 +401,10 @@ private:
         if (clock > mem.get_process_end() && !(Mem_instructions.empty()))
         {
             pair<bool, int> done_mem;
-            if (chosen_mem != NULL)
+            if (chosen_mem != Mem_instructions.end())
             {
                 done_mem = execute_mem_instruction(chosen_mem);
-                chosen_mem = NULL;
+                chosen_mem = Mem_instructions.end();
             }
             else if (mem.get_current_row() == -1)
             {
@@ -462,11 +464,13 @@ private:
                 if (toexecute)
                 {
                     clearCount();
-                    if(clock_lastmem == clock-1){
+                    if (clock_lastmem == clock - 1)
+                    {
                         chosen_mem = Mem_instructions.begin();
                         return;
                     }
-                    else{
+                    else
+                    {
                         done_mem = execute_mem_instruction(Mem_instructions.begin());
                     }
                 }
@@ -497,8 +501,8 @@ private:
     {
         cout << " : Idle \n";
         if (clock == mem.get_process_end())
-        {   
-            num_instructions[(*current_mem).core_id] +=1;
+        {
+            num_instructions[(*current_mem).core_id] += 1;
             Mem_instructions.erase(current_mem);
             mem.set_process_end(-1);
         }
@@ -563,6 +567,7 @@ private:
             }
             if ((*it).inst.instr == InstructionType::sw && (*it).core_id == core_id && it->address == addr && it != current_mem)
             {
+                num_instructions[(*it).core_id]+=1;
                 it = Mem_instructions.erase(it);
                 continue;
             }
@@ -583,7 +588,7 @@ private:
             pair<int, int> ans = mem.get(address / 4);
             registers[core_id].post(inst.dest, ans.first);
             answer.second = ans.second;
-            printcycledata(answer, inst, inst_num, core_id);
+            printcycledata(answer, inst, inst_num, core_id,address);
             mem.set_process_end(clock + answer.second - 1);
             return answer;
         }
@@ -591,7 +596,7 @@ private:
         {
             int time = mem.post(address / 4, (*iter).num_to_write);
             answer.second = time;
-            printcycledata(answer, inst, inst_num, core_id);
+            printcycledata(answer, inst, inst_num, core_id,address);
             mem.set_process_end(clock + answer.second - 1);
             return answer;
         }
@@ -608,16 +613,17 @@ private:
         cout << "\nStatistics :\n\n";
         cout << "\tNumber of clock cycles is " << clock << "\n";
         cout << "\tNumber of Buffer updates is " << mem.getbuffer() << "\n\n";
-        int count=0;
-        for(int i;i<NUM_CORES;i++){
-            count+=num_instructions[i];
+        int count = 0;
+        for (int i=0; i < NUM_CORES; i++)
+        {
+            count += num_instructions[i];
         }
-        cout<<"\tInstructions Per Cycle is "<<(float(count)/clock)<< "\n\n";
+        cout << "\tInstructions Per Cycle is " << ((float)count / (float)clock) << "\n\n";
         cout << "Final Cores' information : \n\n";
         for (int i = 0; i < NUM_CORES; i++)
         {
             cout << "Core " << i << " : \n";
-            cout << "\tNumber of Instructions executed : "<<num_instructions[i]<<" \n";
+            cout << "\tNumber of Instructions executed : " << num_instructions[i] << " \n";
             registers[i].print(hex);
 
             cout << "\n";
@@ -630,7 +636,7 @@ private:
                 cout << "Memory content at the end :\n\n";
                 for (int j = 0; j < mem_modified[i].size(); j++)
                 {
-                    cout << "\t" << mem_modified[i][j] << "-" << mem_modified[i][j] + 3 << " : " << mem.get_without_buffer((mem_modified[i][j] + i * (1048576 / NUM_CORES)) / 4) << "\n";
+                    cout << "\t" << (mem_modified[i][j] - i*(1048576/NUM_CORES)) << "-" << (mem_modified[i][j] + 3 -i*(1048576/NUM_CORES) )<< " : " << mem.get_without_buffer(mem_modified[i][j]/4) << "\n";
                 }
             }
             else
@@ -641,7 +647,7 @@ private:
         }
     }
     // PRINT CYCLE DATA FOR MEMORY INSTRUCTIONS WHEN THEY ARE EXECUTED BY MEMORY -- TAKEN FROM MINOR
-    void printcycledata(pair<bool, int> done, Instruction ins, int address, int core_id)
+    void printcycledata(pair<bool, int> done, Instruction ins, int address, int core_id, int mem_address)
     {
         if (done.second > 1)
         {
@@ -649,12 +655,12 @@ private:
             if (ins.instr == InstructionType::lw)
             {
                 cout << "\tDRAM :\t" << registers[core_id].getname(ins.dest) << " = " << registers[core_id].get(ins.dest) << " ; ";
-                mem_modified[core_id].push_back(ins.imvalue + registers[core_id].get(ins.src1));
+                mem_modified[core_id].push_back(mem_address);
             }
             else
             {
-                int index2 = ins.imvalue + registers[core_id].get(ins.src1);
-                cout << "\tDRAM :\tmemory address " << index2 << "-" << index2 + 3 << " = " << mem.get_without_buffer((index2 + core_id * (1048576 / NUM_CORES)) / 4) << " ; ";
+                int index2 = mem_address;
+                cout << "\tDRAM :\tmemory address " << index2 << "-" << index2 + 3 << " = " << mem.get_without_buffer(mem_address / 4) << " ; ";
 
                 mem_modified[core_id].push_back(index2);
             }
@@ -665,12 +671,12 @@ private:
             if (ins.instr == InstructionType::lw)
             {
                 cout << "\tDRAM :\t" << registers[core_id].getname(ins.dest) << " = " << registers[core_id].get(ins.dest) << " ; ";
-                mem_modified[core_id].push_back(ins.imvalue + registers[core_id].get(ins.src1));
+                mem_modified[core_id].push_back(mem_address);
             }
             else
             {
-                int index2 = ins.imvalue + registers[core_id].get(ins.src1);
-                cout << "\tDRAM :\tmemory address " << index2 << "-" << index2 + 3 << " = " << mem.get_without_buffer((index2 + core_id * (1048576 / NUM_CORES)) / 4) << " ; ";
+                int index2 = mem_address;
+                cout << "\tDRAM :\tmemory address " << index2 << "-" << index2 + 3 << " = " << mem.get_without_buffer(mem_address / 4) << " ; ";
                 mem_modified[core_id].push_back(index2);
             }
         }
@@ -912,7 +918,7 @@ private:
                 return answer;
             }
             index1 = inst.imvalue + registers[core_id].get(inst.src1);
-            if (index1 >= 0 && index1 < (1048576 / NUM_CORES) && index1 % 4 == 0)
+            if (index1 >= 0 && index1 < (1048576 / NUM_CORES) && (index1 % 4 == 0))
             {
                 //pair<int, int> ans = mem.get(index1 / 4);
                 //registers[core_id].post(inst.dest, ans.first);
@@ -932,7 +938,7 @@ private:
             break;
         case InstructionType::sw:
             index2 = inst.imvalue + registers[core_id].get(inst.src1);
-            if (index2 >= 0 && index2 < 1048576 / NUM_CORES && index2 % 4 == 0)
+            if (index2 >= 0 && index2 < 1048576 / NUM_CORES && (index2 % 4 == 0))
             {
                 //int time = mem.post(index2 / 4, registers[core_id].get(inst.dest));
                 checkForwarding(index2 + (core_id) * (1048576 / NUM_CORES), core_id);
@@ -1575,11 +1581,6 @@ private:
 int main(int argc, char *argv[])
 {
     NUM_CORES = (argc > 1) ? stoi(argv[1]) : 1;
-    if (ROW_ACCESS_DELAY <= 0 || COL_ACCESS_DELAY <= 0)
-    {
-        cout << "Invalid DRAM access delay(s)\n";
-        return 0;
-    }
     if (NUM_CORES > CORES_LIMIT)
     {
         cout << "Too many cores\n";
@@ -1590,9 +1591,14 @@ int main(int argc, char *argv[])
     {
         fileNames[i] = (argc > 2 + i) ? argv[2 + i] : "demo" + to_string(i + 1) + ".txt";
     }
-    M = (argc > NUM_CORES+2) ? stoi(argv[NUM_CORES+2]) : INT_MAX;
-    ROW_ACCESS_DELAY = (argc > NUM_CORES+3) ? stoi(argv[NUM_CORES+3]) : 10;
-    COL_ACCESS_DELAY = (argc > NUM_CORES+4) ? stoi(argv[NUM_CORES+4]) : 2;
+    M = (argc > NUM_CORES + 2) ? stoi(argv[NUM_CORES + 2]) : INT_MAX;
+    ROW_ACCESS_DELAY = (argc > NUM_CORES + 3) ? stoi(argv[NUM_CORES + 3]) : 10;
+    COL_ACCESS_DELAY = (argc > NUM_CORES + 4) ? stoi(argv[NUM_CORES + 4]) : 2;
+    if (ROW_ACCESS_DELAY <= 0 || COL_ACCESS_DELAY <= 0)
+    {
+        cout << "Invalid DRAM access delay(s)\n";
+        return 0;
+    }
 
     Simulator sim;
     if (sim.loadinstructions(fileNames))
