@@ -326,6 +326,8 @@ private:
     // LIST OF MEMORY INSTRUCTIONS
     list<Mem_instr> Mem_instructions;
     list<Mem_instr>::iterator current_mem;
+    int clock_lastmem = 0;
+    list<Mem_instr>::iterator chosen_mem = NULL;
 
     bool checkremaining()
     {
@@ -342,7 +344,7 @@ private:
         }
         return remaining;
     }
-    
+
     void clearCount()
     {
         list<Mem_instr>::iterator it1 = Mem_instructions.begin();
@@ -391,7 +393,12 @@ private:
         if (clock > mem.get_process_end() && !(Mem_instructions.empty()))
         {
             pair<bool, int> done_mem;
-            if (mem.get_current_row() == -1)
+            if (chosen_mem != NULL)
+            {
+                done_mem = execute_mem_instruction(chosen_mem);
+                chosen_mem = NULL;
+            }
+            else if (mem.get_current_row() == -1)
             {
                 done_mem = execute_mem_instruction(Mem_instructions.begin());
             }
@@ -419,11 +426,27 @@ private:
                             if (Mem_instructions.begin()->count >= STARVATION)
                             {
                                 clearCount();
-                                done_mem = execute_mem_instruction(Mem_instructions.begin());
+                                if (clock_lastmem == clock - 1)
+                                {
+                                    chosen_mem = Mem_instructions.begin();
+                                    return;
+                                }
+                                else
+                                {
+                                    done_mem = execute_mem_instruction(Mem_instructions.begin());
+                                }
                                 return;
                             }
                             toexecute = false;
-                            done_mem = execute_mem_instruction(it);
+                            if (clock_lastmem == clock - 1)
+                            {
+                                chosen_mem = it;
+                                return;
+                            }
+                            else
+                            {
+                                done_mem = execute_mem_instruction(it);
+                            }
                         }
 
                         break;
@@ -433,7 +456,13 @@ private:
                 if (toexecute)
                 {
                     clearCount();
-                    done_mem = execute_mem_instruction(Mem_instructions.begin());
+                    if(clock_lastmem == clock-1){
+                        chosen_mem = Mem_instructions.begin();
+                        return;
+                    }
+                    else{
+                        done_mem = execute_mem_instruction(Mem_instructions.begin());
+                    }
                 }
             }
         }
@@ -491,13 +520,14 @@ private:
                 }
                 it++;
             }
-            if(mem.get_process_end()==clock && (*current_mem).core_id == core_id && (*current_mem).inst.instr == 7 && (ins.instr<4 || ins.instr==9)){
+            if (mem.get_process_end() == clock && (*current_mem).core_id == core_id && (*current_mem).inst.instr == 7 && (ins.instr < 4 || ins.instr == 9))
+            {
                 return false;
             }
         }
         return true;
     }
-    
+
     /*void setUsed(Instruction ins,int coreId){
     	list<Mem_instr>::iterator it = Mem_instructions.begin();
         while (it != Mem_instructions.end())
@@ -512,24 +542,25 @@ private:
             it++;
         }
     }*/
-    
-    void checkForwarding(int addr,int core_id){
-    	list<Mem_instr>::iterator it = Mem_instructions.end();
+
+    void checkForwarding(int addr, int core_id)
+    {
+        list<Mem_instr>::iterator it = Mem_instructions.end();
         while (it != Mem_instructions.begin())
         {
             it--;
-            if ((*it).inst.instr == InstructionType::lw && (*it).core_id == core_id && it->address==addr)
+            if ((*it).inst.instr == InstructionType::lw && (*it).core_id == core_id && it->address == addr)
             {
-             return;
+                return;
             }
-            if ((*it).inst.instr == InstructionType::sw && (*it).core_id == core_id && it->address==addr&& it!=current_mem)
+            if ((*it).inst.instr == InstructionType::sw && (*it).core_id == core_id && it->address == addr && it != current_mem)
             {
-                it=Mem_instructions.erase(it);
+                it = Mem_instructions.erase(it);
                 continue;
             }
         }
     }
-    
+
     // EXECUTE MEM INSTRUCTION
     pair<bool, int> execute_mem_instruction(list<Mem_instr>::iterator iter)
     {
@@ -676,7 +707,7 @@ private:
                 cout << "\tcycle " << (clock + 2 * ROW_ACCESS_DELAY) << " : \tDRAM :\tAccess column\n";
         }
     }
-     
+
     //Same execution for instructions other than lw and sw
     pair<bool, int> execute(Instruction inst, int core_id)
     {
@@ -871,7 +902,8 @@ private:
             {
                 //pair<int, int> ans = mem.get(index1 / 4);
                 //registers[core_id].post(inst.dest, ans.first);
-                Mem_instructions.push_back({inst, (index1 + (core_id) * (1048576 / NUM_CORES)) / 1024,index1 + (core_id) * (1048576 / NUM_CORES), pc[core_id], -1, core_id,0});
+                Mem_instructions.push_back({inst, (index1 + (core_id) * (1048576 / NUM_CORES)) / 1024, index1 + (core_id) * (1048576 / NUM_CORES), pc[core_id], -1, core_id, 0});
+                clock_lastmem = clock;
                 cout << "\tlw :\tDRAM request issued"
                      << " ; Instruction address : " << pc[core_id] << " \n";
                 //answer.second = ans.second + 1;
@@ -889,8 +921,9 @@ private:
             if (index2 >= 0 && index2 < 1048576 / NUM_CORES && index2 % 4 == 0)
             {
                 //int time = mem.post(index2 / 4, registers[core_id].get(inst.dest));
-                checkForwarding(index2 + (core_id) * (1048576 / NUM_CORES),core_id);
-                Mem_instructions.push_back({inst, (index2 + (core_id) * (1048576 / NUM_CORES)) / 1024,index2 + (core_id) * (1048576 / NUM_CORES), pc[core_id], registers[core_id].get(inst.dest), core_id,0});
+                checkForwarding(index2 + (core_id) * (1048576 / NUM_CORES), core_id);
+                Mem_instructions.push_back({inst, (index2 + (core_id) * (1048576 / NUM_CORES)) / 1024, index2 + (core_id) * (1048576 / NUM_CORES), pc[core_id], registers[core_id].get(inst.dest), core_id, 0});
+                clock_lastmem = clock;
                 cout << "\tsw : \tDRAM request issued"
                      << " ; Instruction address : " << pc[core_id] << " \n";
                 //answer.second = time + 1;
