@@ -8,6 +8,7 @@ const int CORES_LIMIT = 10;
 const int STARVATION = 10;
 int MANAGER_SIZE = 128;
 int NUM_CORES;
+int M;
 
 enum InstructionType
 {
@@ -279,7 +280,7 @@ public:
     {
         clock = 0;
         cout << "Every Cycle description :\n\n";
-        while (checkremaining())
+        while (checkremaining() && clock < M)
         {
             ++clock;
 
@@ -328,6 +329,7 @@ private:
     list<Mem_instr>::iterator current_mem;
     int clock_lastmem = 0;
     list<Mem_instr>::iterator chosen_mem = NULL;
+    int num_instructions[CORES_LIMIT];
 
     bool checkremaining()
     {
@@ -365,12 +367,16 @@ private:
             if (independent)
             {
                 pair<bool, int> done = execute(ins, core_id);
+                if(ins.instr!=7 && ins.instr!=8){
+                    num_instructions[core_id]+=1;
+                }
                 if (!done.first)
                 {
                     cout << pc << "\n";
                 }
                 if (mem.get_process_end() == clock)
                 {
+                    num_instructions[(*current_mem).core_id] +=1;
                     Mem_instructions.erase(current_mem);
                     mem.set_process_end(-1);
                 }
@@ -481,6 +487,7 @@ private:
         //clock = mem.get_process_end();
         if (clock == mem.get_process_end())
         {
+            num_instructions[(*current_mem).core_id] += 1;
             Mem_instructions.erase(current_mem);
             mem.set_process_end(-1);
         }
@@ -490,7 +497,8 @@ private:
     {
         cout << " : Idle \n";
         if (clock == mem.get_process_end())
-        {
+        {   
+            num_instructions[(*current_mem).core_id] +=1;
             Mem_instructions.erase(current_mem);
             mem.set_process_end(-1);
         }
@@ -600,10 +608,16 @@ private:
         cout << "\nStatistics :\n\n";
         cout << "\tNumber of clock cycles is " << clock << "\n";
         cout << "\tNumber of Buffer updates is " << mem.getbuffer() << "\n\n";
-        cout << "Final register states : \n\n";
+        int count=0;
+        for(int i;i<NUM_CORES;i++){
+            count+=num_instructions[i];
+        }
+        cout<<"\tInstructions Per Cycle is "<<(float(count)/clock)<< "\n\n";
+        cout << "Final Cores' information : \n\n";
         for (int i = 0; i < NUM_CORES; i++)
         {
             cout << "Core " << i << " : \n";
+            cout << "\tNumber of Instructions executed : "<<num_instructions[i]<<" \n";
             registers[i].print(hex);
 
             cout << "\n";
@@ -1563,6 +1577,7 @@ int main(int argc, char *argv[])
     ROW_ACCESS_DELAY = (argc > 1) ? stoi(argv[1]) : 10;
     COL_ACCESS_DELAY = (argc > 2) ? stoi(argv[2]) : 2;
     NUM_CORES = (argc > 3) ? stoi(argv[3]) : 1;
+    M = (argc > 4) ? stoi(argv[4]) : INT_MAX;
     if (ROW_ACCESS_DELAY <= 0 || COL_ACCESS_DELAY <= 0)
     {
         cout << "Invalid DRAM access delay(s)\n";
@@ -1576,7 +1591,7 @@ int main(int argc, char *argv[])
     string fileNames[NUM_CORES];
     for (int i = 0; i < NUM_CORES; i++)
     {
-        fileNames[i] = (argc > 4 + i) ? argv[4 + i] : "demo" + to_string(i + 1) + ".txt";
+        fileNames[i] = (argc > 5 + i) ? argv[5 + i] : "demo" + to_string(i + 1) + ".txt";
     }
 
     Simulator sim;
